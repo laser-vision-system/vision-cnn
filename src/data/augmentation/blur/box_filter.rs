@@ -22,12 +22,18 @@ impl BoxFilter {
 impl Default for BoxFilter {
 	/// Returns a uniform 3-by-3 kernel.
 	fn default() -> Self {
-		Self { kernel: [1.0; 9] }
+		Self {
+			kernel: [1.0; 9],
+		}
 	}
 }
 
 impl ImageStep for BoxFilter {
-	fn apply(&self, image: ImageType, _rng: &mut StdRng) -> ImageType {
+	fn apply(
+		&self,
+		image: ImageType,
+		_rng: &mut StdRng,
+	) -> ImageType {
 		filter3x3(&image, &self.kernel)
 	}
 }

@@ -12,15 +12,25 @@ use rand::rngs::StdRng;
 /// for seeded stochastic behavior.
 pub trait ImageStep: Clone + Send + Sync {
 	/// Transform an owned RGB image and return the result.
-	fn apply(&self, image: ImageType, rng: &mut StdRng) -> ImageType;
+	fn apply(
+		&self,
+		image: ImageType,
+		rng: &mut StdRng,
+	) -> ImageType;
 
 	/// Append a step to the augmentation pipeline.
-	fn then<N>(self, next: N) -> Sequence<Self, N>
+	fn then<N>(
+		self,
+		next: N,
+	) -> Sequence<Self, N>
 	where
 		Self: Sized,
 		N: ImageStep,
 	{
-		Sequence { first: self, next }
+		Sequence {
+			first: self,
+			next,
+		}
 	}
 }
 
@@ -40,7 +50,11 @@ where
 	F: ImageStep,
 	N: ImageStep,
 {
-	fn apply(&self, image: ImageType, rng: &mut StdRng) -> ImageType {
+	fn apply(
+		&self,
+		image: ImageType,
+		rng: &mut StdRng,
+	) -> ImageType {
 		let image = self.first.apply(image, rng);
 		self.next.apply(image, rng)
 	}
@@ -51,7 +65,11 @@ where
 pub struct NoOp;
 
 impl ImageStep for NoOp {
-	fn apply(&self, image: ImageType, _rng: &mut StdRng) -> ImageType {
+	fn apply(
+		&self,
+		image: ImageType,
+		_rng: &mut StdRng,
+	) -> ImageType {
 		image
 	}
 }
@@ -59,7 +77,10 @@ impl ImageStep for NoOp {
 #[cfg(test)]
 mod tests {
 	use image::Rgb;
-	use rand::{RngExt as _, SeedableRng as _};
+	use rand::{
+		RngExt as _,
+		SeedableRng as _,
+	};
 
 	use super::*;
 
@@ -67,7 +88,11 @@ mod tests {
 	struct SetRed(u8);
 
 	impl ImageStep for SetRed {
-		fn apply(&self, mut image: ImageType, _rng: &mut StdRng) -> ImageType {
+		fn apply(
+			&self,
+			mut image: ImageType,
+			_rng: &mut StdRng,
+		) -> ImageType {
 			for pixel in image.pixels_mut() {
 				pixel.0[0] = self.0;
 			}
@@ -79,7 +104,11 @@ mod tests {
 	struct RandomRed;
 
 	impl ImageStep for RandomRed {
-		fn apply(&self, mut image: ImageType, rng: &mut StdRng) -> ImageType {
+		fn apply(
+			&self,
+			mut image: ImageType,
+			rng: &mut StdRng,
+		) -> ImageType {
 			let red = rng.random_range(0..=u8::MAX);
 			for pixel in image.pixels_mut() {
 				pixel.0[0] = red;

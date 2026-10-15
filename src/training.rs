@@ -4,20 +4,37 @@
 	reason = "Not a problem"
 )]
 
-use std::{fs, path::Path};
+use std::{
+	fs,
+	path::Path,
+};
 
 use burn::{
-	data::{dataloader::DataLoaderBuilder, dataset::Dataset},
+	data::{
+		dataloader::DataLoaderBuilder,
+		dataset::Dataset,
+	},
 	optim::AdamConfig,
 	prelude::*,
-	record::{FullPrecisionSettings, NamedMpkGzFileRecorder},
+	record::{
+		FullPrecisionSettings,
+		NamedMpkGzFileRecorder,
+	},
 	tensor::backend::AutodiffBackend,
 	train::{
-		Learner, MetricEarlyStoppingStrategy, StoppingCondition,
+		Learner,
+		MetricEarlyStoppingStrategy,
+		StoppingCondition,
 		SupervisedTraining,
 		metric::{
-			CpuMemory, CudaMetric, LossMetric,
-			store::{Aggregate, Direction, Split},
+			CpuMemory,
+			CudaMetric,
+			LossMetric,
+			store::{
+				Aggregate,
+				Direction,
+				Split,
+			},
 		},
 	},
 };
@@ -25,7 +42,10 @@ use dataset_loader::item::NumericLike;
 
 use crate::{
 	data::{
-		AugmentedLaserBatcher, ImageStep, IntensityValType, LoadedLaserItem,
+		AugmentedLaserBatcher,
+		ImageStep,
+		IntensityValType,
+		LoadedLaserItem,
 	},
 	learning_rate::InverseTimeDecayLrScheduler,
 	model::LaserModelConfig,
@@ -59,7 +79,10 @@ fn create_artefact_dir(artefact_dir: &str) {
 	_ = fs::create_dir_all(artefact_dir);
 }
 
-fn copy_checkpoints(source_dir: &str, output_dir: &str) {
+fn copy_checkpoints(
+	source_dir: &str,
+	output_dir: &str,
+) {
 	let source = Path::new(source_dir).join("checkpoint");
 	let destination = Path::new(output_dir).join("checkpoint");
 	fs::create_dir_all(&destination)
@@ -98,7 +121,10 @@ pub fn latest_checkpoint_epoch(artefact_dir: &str) -> Option<usize> {
 }
 
 #[expect(clippy::integer_division, reason = "Accounted for")]
-fn steps_per_epoch(dataset_len: usize, batch_size: usize) -> usize {
+fn steps_per_epoch(
+	dataset_len: usize,
+	batch_size: usize,
+) -> usize {
 	if dataset_len == 0 || batch_size == 0 {
 		return 1;
 	}

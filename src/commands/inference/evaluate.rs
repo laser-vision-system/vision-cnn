@@ -5,18 +5,38 @@
 
 use std::{
 	error::Error,
-	fs::{self, File},
-	io::{Error as IoError, ErrorKind},
+	fs::{
+		self,
+		File,
+	},
+	io::{
+		Error as IoError,
+		ErrorKind,
+	},
 	num::NonZeroUsize,
-	path::{Path, PathBuf},
+	path::{
+		Path,
+		PathBuf,
+	},
 };
 
-use burn::{data::dataset::Dataset, prelude::Backend, tensor::Element};
+use burn::{
+	data::dataset::Dataset,
+	prelude::Backend,
+	tensor::Element,
+};
 use dataset_loader::item::NumericLike;
 
 use crate::{
-	data::{IntensityValType, LoadedLaserItem},
-	evaluation::{EvaluationReport, RegressionMetrics, regression_metrics},
+	data::{
+		IntensityValType,
+		LoadedLaserItem,
+	},
+	evaluation::{
+		EvaluationReport,
+		RegressionMetrics,
+		regression_metrics,
+	},
 	inference,
 };
 
@@ -117,7 +137,10 @@ where
 	println!("{results}");
 }
 
-fn print_report_paths(summary_path: &Path, samples_path: &Path) {
+fn print_report_paths(
+	summary_path: &Path,
+	samples_path: &Path,
+) {
 	println!("Summary: {}", summary_path.display());
 	println!("Samples: {}", samples_path.display());
 }
@@ -125,13 +148,19 @@ fn print_report_paths(summary_path: &Path, samples_path: &Path) {
 #[cfg(test)]
 mod tests {
 	use std::{
-		env, fs, process,
-		sync::atomic::{AtomicUsize, Ordering},
+		env,
+		fs,
+		process,
+		sync::atomic::{
+			AtomicUsize,
+			Ordering,
+		},
 	};
 
 	use super::*;
 	use crate::{
-		evaluation::regression_metrics, inference::result::SampleInference,
+		evaluation::regression_metrics,
+		inference::result::SampleInference,
 	};
 
 	static NEXT_TEMP_DIR: AtomicUsize = AtomicUsize::new(0);
@@ -146,8 +175,8 @@ mod tests {
 		let samples = [SampleInference {
 			image_path: "dummy/sample.png".to_owned(),
 			position: Some("sample".to_owned()),
-			expected_intensity: 2.0_f32,
-			predicted_intensity: 3.0_f32,
+			expected_intensity: 2f32,
+			predicted_intensity: 3f32,
 			source_fields: Vec::new(),
 		}];
 		let report = EvaluationReport::new("dummy", "test", metrics, &samples);

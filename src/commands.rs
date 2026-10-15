@@ -5,7 +5,11 @@ mod training;
 
 use std::error::Error;
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{
+	Parser,
+	Subcommand,
+	ValueEnum,
+};
 
 #[derive(Clone, Copy, ValueEnum)]
 pub(super) enum DatasetChoice {

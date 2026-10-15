@@ -1,8 +1,14 @@
 use std::{
 	error::Error,
 	fs,
-	io::{Error as IoError, ErrorKind},
-	path::{Path, PathBuf},
+	io::{
+		Error as IoError,
+		ErrorKind,
+	},
+	path::{
+		Path,
+		PathBuf,
+	},
 };
 
 pub(super) fn prepare(
@@ -89,8 +95,13 @@ fn remove_existing(
 #[cfg(test)]
 mod tests {
 	use std::{
-		env, fs, process,
-		sync::atomic::{AtomicUsize, Ordering},
+		env,
+		fs,
+		process,
+		sync::atomic::{
+			AtomicUsize,
+			Ordering,
+		},
 	};
 
 	use super::*;

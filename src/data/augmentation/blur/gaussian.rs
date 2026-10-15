@@ -2,7 +2,12 @@ use dataset_loader::item::ImageType;
 use image::imageops::blur;
 use rand::rngs::StdRng;
 
-use super::{super::ImageStep, BlurSigma, BlurSigmaRange, apply_blur};
+use super::{
+	super::ImageStep,
+	BlurSigma,
+	BlurSigmaRange,
+	apply_blur,
+};
 
 /// Applies a Gaussian blur with a fixed standard deviation.
 #[derive(Clone, Debug, Default)]
@@ -20,7 +25,11 @@ impl Gaussian {
 }
 
 impl ImageStep for Gaussian {
-	fn apply(&self, image: ImageType, _rng: &mut StdRng) -> ImageType {
+	fn apply(
+		&self,
+		image: ImageType,
+		_rng: &mut StdRng,
+	) -> ImageType {
 		apply_blur(image, self.sigma, blur)
 	}
 }
@@ -33,7 +42,10 @@ pub struct RandomGaussian {
 
 impl RandomGaussian {
 	/// Creates a blur with a sampled radius in `sigma_min..sigma_max`.
-	pub fn new(sigma_min: f32, sigma_max: f32) -> Option<Self> {
+	pub fn new(
+		sigma_min: f32,
+		sigma_max: f32,
+	) -> Option<Self> {
 		Some(Self {
 			sigma: BlurSigmaRange::new(sigma_min, sigma_max)?,
 		})
@@ -43,13 +55,20 @@ impl RandomGaussian {
 impl Default for RandomGaussian {
 	fn default() -> Self {
 		Self {
-			sigma: BlurSigmaRange { min: 0.0, max: 1.0 },
+			sigma: BlurSigmaRange {
+				min: 0.0,
+				max: 1.0,
+			},
 		}
 	}
 }
 
 impl ImageStep for RandomGaussian {
-	fn apply(&self, image: ImageType, rng: &mut StdRng) -> ImageType {
+	fn apply(
+		&self,
+		image: ImageType,
+		rng: &mut StdRng,
+	) -> ImageType {
 		apply_blur(image, self.sigma.sample(rng), blur)
 	}
 }
@@ -100,7 +119,10 @@ mod tests {
 		let original = impulse_image();
 		let mut rng = StdRng::seed_from_u64(42);
 		let image = RandomGaussian {
-			sigma: BlurSigmaRange { min: 1.0, max: 3.0 },
+			sigma: BlurSigmaRange {
+				min: 1.0,
+				max: 3.0,
+			},
 		}
 		.apply(original.clone(), &mut rng);
 
@@ -114,11 +136,17 @@ mod tests {
 	fn random_sigma_is_deterministic_with_seed() {
 		let original = impulse_image();
 		let image_a = RandomGaussian {
-			sigma: BlurSigmaRange { min: 1.0, max: 3.0 },
+			sigma: BlurSigmaRange {
+				min: 1.0,
+				max: 3.0,
+			},
 		}
 		.apply(original.clone(), &mut StdRng::seed_from_u64(7));
 		let image_b = RandomGaussian {
-			sigma: BlurSigmaRange { min: 1.0, max: 3.0 },
+			sigma: BlurSigmaRange {
+				min: 1.0,
+				max: 3.0,
+			},
 		}
 		.apply(original.clone(), &mut StdRng::seed_from_u64(7));
 		assert_eq!(image_a, image_b);

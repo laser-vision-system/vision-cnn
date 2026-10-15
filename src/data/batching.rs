@@ -1,13 +1,29 @@
 use std::{
 	convert::identity,
-	sync::{Arc, Mutex, PoisonError},
+	sync::{
+		Arc,
+		Mutex,
+		PoisonError,
+	},
 };
 
-use burn::{data::dataloader::batcher::Batcher, prelude::*};
-use dataset_loader::item::{ImageType, NumericLike};
-use rand::{SeedableRng as _, rngs::StdRng};
+use burn::{
+	data::dataloader::batcher::Batcher,
+	prelude::*,
+};
+use dataset_loader::item::{
+	ImageType,
+	NumericLike,
+};
+use rand::{
+	SeedableRng as _,
+	rngs::StdRng,
+};
 
-use super::{ImageStep, IntensityValType};
+use super::{
+	ImageStep,
+	IntensityValType,
+};
 use crate::data::LoadedLaserItem;
 
 const IMG_CHANNELS: usize = 3;
@@ -54,7 +70,10 @@ where
 	P: ImageStep,
 {
 	/// Create a batcher with anaugmentation pipeline defined at compile time.
-	pub fn new(augmentation: P, seed: u64) -> Self {
+	pub fn new(
+		augmentation: P,
+		seed: u64,
+	) -> Self {
 		Self {
 			augmentation,
 			rng: Arc::new(Mutex::new(StdRng::seed_from_u64(seed))),
@@ -115,7 +134,10 @@ where
 	let images = Tensor::cat(images, 0);
 	let targets = Tensor::cat(targets, 0);
 
-	LaserBatch { images, targets }
+	LaserBatch {
+		images,
+		targets,
+	}
 }
 
 /// Convert from channel-last RGB to channel-first RGB.

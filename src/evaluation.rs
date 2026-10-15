@@ -1,6 +1,11 @@
 //! Regression metrics for model evaluation.
 
-use std::{collections::BTreeMap, error::Error, fmt, io::Write};
+use std::{
+	collections::BTreeMap,
+	error::Error,
+	fmt,
+	io::Write,
+};
 
 use dataset_loader::item::NumericLike;
 use serde::Serialize;
@@ -17,20 +22,28 @@ pub enum RegressionMetricsError {
 }
 
 impl fmt::Display for RegressionMetricsError {
-	fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+	fn fmt(
+		&self,
+		formatter: &mut fmt::Formatter<'_>,
+	) -> fmt::Result {
 		match self {
 			Self::EmptyInput => {
 				formatter.write_str("no evaluation samples provided")
 			},
-			Self::NonFiniteValue { sample_index } => write!(
-				formatter,
-				"sample {sample_index} contains a non-finite target or prediction"
-			),
+			Self::NonFiniteValue {
+				sample_index,
+			} => {
+				write!(
+					formatter,
+					"sample {sample_index} contains a non-finite target or prediction"
+				)
+			},
 		}
 	}
 }
 
-impl Error for RegressionMetricsError {}
+impl Error for RegressionMetricsError {
+}
 
 /// Aggregate regression metrics computed over target/prediction pairs.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize)]
@@ -49,7 +62,8 @@ pub struct RegressionMetrics {
 	pub median_absolute_error: f64,
 	/// 95th percentile absolute error using linear interpolation.
 	pub percentile_95_absolute_error: f64,
-	/// Coefficient of determination, or `None` when targets have zero variance.
+	/// Coefficient of determination, or `None` when targets have zero
+	/// variance.
 	pub r_squared: Option<f64>,
 }
 
@@ -139,7 +153,10 @@ impl EvaluationReport {
 	/// # Errors
 	///
 	/// Returns an error if serialization or writing fails.
-	pub fn write_json<W>(&self, mut writer: W) -> Result<(), Box<dyn Error>>
+	pub fn write_json<W>(
+		&self,
+		mut writer: W,
+	) -> Result<(), Box<dyn Error>>
 	where
 		W: Write,
 	{
@@ -153,7 +170,10 @@ impl EvaluationReport {
 	/// # Errors
 	///
 	/// Returns an error if serialization or writing fails.
-	pub fn write_csv<W>(&self, writer: W) -> Result<(), Box<dyn Error>>
+	pub fn write_csv<W>(
+		&self,
+		writer: W,
+	) -> Result<(), Box<dyn Error>>
 	where
 		W: Write,
 	{
@@ -201,7 +221,7 @@ impl EvaluationReport {
 	reason = "The sample count is bounded by the allocated in-memory evaluation pairs"
 )]
 pub fn regression_metrics<I>(
-	samples: I,
+	samples: I
 ) -> Result<RegressionMetrics, RegressionMetricsError>
 where
 	I: IntoIterator<Item = (f64, f64)>,
@@ -265,7 +285,10 @@ where
 	clippy::cast_sign_loss,
 	reason = "The interpolated position is finite and bounded by the allocated vector length"
 )]
-fn percentile(sorted_values: &[f64], quantile: f64) -> Option<f64> {
+fn percentile(
+	sorted_values: &[f64],
+	quantile: f64,
+) -> Option<f64> {
 	let last_index = sorted_values.len().checked_sub(1)?;
 	let position = last_index as f64 * quantile;
 	let lower_index = position.floor() as usize;
@@ -288,7 +311,7 @@ mod tests {
 		assert_eq!(metrics.sample_count, 3);
 		assert!((metrics.mean_squared_error - 5.0 / 3.0).abs() < 1e-12);
 		assert!(
-			(metrics.root_mean_squared_error - (5.0_f64 / 3.0).sqrt()).abs()
+			(metrics.root_mean_squared_error - (5f64 / 3.0).sqrt()).abs()
 				< 1e-12
 		);
 		assert!((metrics.mean_absolute_error - 1.0).abs() < 1e-12);
@@ -320,7 +343,9 @@ mod tests {
 	fn rejects_non_finite_values_with_sample_index() {
 		assert_eq!(
 			regression_metrics([(1.0, 1.0), (f64::NAN, 2.0)]),
-			Err(RegressionMetricsError::NonFiniteValue { sample_index: 1 })
+			Err(RegressionMetricsError::NonFiniteValue {
+				sample_index: 1
+			})
 		);
 	}
 
@@ -329,7 +354,7 @@ mod tests {
 		let results = [SampleInference {
 			image_path: "dummy/sample.png".to_owned(),
 			position: Some("capture, north".to_owned()),
-			expected_intensity: 5.0_f32,
+			expected_intensity: 5f32,
 			predicted_intensity: 4.5_f32,
 			source_fields: vec![("note", "quoted \"value\"".to_owned())],
 		}];

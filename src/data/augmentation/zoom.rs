@@ -3,8 +3,16 @@
 	reason = "The types are variants within the module"
 )]
 use dataset_loader::item::ImageType;
-use image::imageops::{FilterType, crop, overlay, resize};
-use rand::{RngExt as _, rngs::StdRng};
+use image::imageops::{
+	FilterType,
+	crop,
+	overlay,
+	resize,
+};
+use rand::{
+	RngExt as _,
+	rngs::StdRng,
+};
 
 use super::ImageStep;
 
@@ -18,12 +26,21 @@ pub struct ZoomInFactors {
 impl ZoomInFactors {
 	/// Creates a range; returns `None` for non-finite, reversed, or sub-one
 	/// bounds.
-	pub fn new(min: f32, max: f32) -> Option<Self> {
+	pub fn new(
+		min: f32,
+		max: f32,
+	) -> Option<Self> {
 		(min.is_finite() && max.is_finite() && min >= 1.0 && max >= min)
-			.then_some(Self { min, max })
+			.then_some(Self {
+				min,
+				max,
+			})
 	}
 
-	fn sample(self, rng: &mut StdRng) -> f32 {
+	fn sample(
+		self,
+		rng: &mut StdRng,
+	) -> f32 {
 		rng.random_range(self.min..=self.max)
 	}
 }
@@ -38,12 +55,21 @@ pub struct ZoomOutDivisors {
 impl ZoomOutDivisors {
 	/// Creates a divisor range; returns `None` for non-finite, reversed, or
 	/// sub-one bounds.
-	pub fn new(min: f32, max: f32) -> Option<Self> {
+	pub fn new(
+		min: f32,
+		max: f32,
+	) -> Option<Self> {
 		(min.is_finite() && max.is_finite() && min >= 1.0 && max >= min)
-			.then_some(Self { min, max })
+			.then_some(Self {
+				min,
+				max,
+			})
 	}
 
-	fn sample(self, rng: &mut StdRng) -> f32 {
+	fn sample(
+		self,
+		rng: &mut StdRng,
+	) -> f32 {
 		rng.random_range(self.min..=self.max)
 	}
 }
@@ -99,12 +125,18 @@ pub struct ZoomIn {
 impl ZoomIn {
 	/// Creates a zoom-in transform with a validated factor range.
 	pub const fn new(factors: ZoomInFactors) -> Self {
-		Self { factors }
+		Self {
+			factors,
+		}
 	}
 }
 
 impl ImageStep for ZoomIn {
-	fn apply(&self, image: ImageType, rng: &mut StdRng) -> ImageType {
+	fn apply(
+		&self,
+		image: ImageType,
+		rng: &mut StdRng,
+	) -> ImageType {
 		resample_to_canvas(
 			image,
 			self.factors.sample(rng),
@@ -121,12 +153,18 @@ pub struct ZoomOut {
 impl ZoomOut {
 	/// Creates a zoom-out transform with a validated divisor range.
 	pub const fn new(divisors: ZoomOutDivisors) -> Self {
-		Self { divisors }
+		Self {
+			divisors,
+		}
 	}
 }
 
 impl ImageStep for ZoomOut {
-	fn apply(&self, image: ImageType, rng: &mut StdRng) -> ImageType {
+	fn apply(
+		&self,
+		image: ImageType,
+		rng: &mut StdRng,
+	) -> ImageType {
 		resample_to_canvas(
 			image,
 			1.0 / self.divisors.sample(rng),
@@ -142,7 +180,10 @@ mod tests {
 
 	use super::*;
 
-	fn gradient_image(width: u32, height: u32) -> ImageType {
+	fn gradient_image(
+		width: u32,
+		height: u32,
+	) -> ImageType {
 		ImageType::from_fn(width, height, |x, y| {
 			Rgb([
 				u8::try_from(x % 256).unwrap_or_default(),
@@ -156,7 +197,10 @@ mod tests {
 	fn zoom_in_preserves_dimensions() {
 		let image = gradient_image(4, 5);
 		let mut rng = StdRng::seed_from_u64(42);
-		let factors = ZoomInFactors { min: 2.0, max: 2.0 };
+		let factors = ZoomInFactors {
+			min: 2.0,
+			max: 2.0,
+		};
 		let result = ZoomIn::new(factors).apply(image, &mut rng);
 		assert_eq!(result.dimensions(), (4, 5));
 	}
@@ -165,7 +209,10 @@ mod tests {
 	fn zoom_out_preserves_dimensions() {
 		let image = gradient_image(12, 10);
 		let mut rng = StdRng::seed_from_u64(42);
-		let divisors = ZoomOutDivisors { min: 2.0, max: 2.0 };
+		let divisors = ZoomOutDivisors {
+			min: 2.0,
+			max: 2.0,
+		};
 		let result = ZoomOut::new(divisors).apply(image, &mut rng);
 		assert_eq!(result.dimensions(), (12, 10));
 	}
@@ -174,8 +221,11 @@ mod tests {
 	fn zoom_in_changes_pixels_when_scaled_up() {
 		let image = gradient_image(8, 8);
 		let mut rng = StdRng::seed_from_u64(42);
-		let result = ZoomIn::new(ZoomInFactors { min: 2.0, max: 2.0 })
-			.apply(image.clone(), &mut rng);
+		let result = ZoomIn::new(ZoomInFactors {
+			min: 2.0,
+			max: 2.0,
+		})
+		.apply(image.clone(), &mut rng);
 		assert_ne!(result, image);
 	}
 
@@ -183,8 +233,11 @@ mod tests {
 	fn zoom_out_centers_resized_content() {
 		let image = ImageType::from_pixel(8, 8, Rgb([12, 34, 56]));
 		let mut rng = StdRng::seed_from_u64(42);
-		let result = ZoomOut::new(ZoomOutDivisors { min: 2.0, max: 2.0 })
-			.apply(image, &mut rng);
+		let result = ZoomOut::new(ZoomOutDivisors {
+			min: 2.0,
+			max: 2.0,
+		})
+		.apply(image, &mut rng);
 		assert_eq!(result.get_pixel(3, 3).0, [12, 34, 56]);
 	}
 
@@ -192,8 +245,11 @@ mod tests {
 	fn zoom_out_fills_padding_with_black() {
 		let image = ImageType::from_pixel(8, 8, Rgb([12, 34, 56]));
 		let mut rng = StdRng::seed_from_u64(42);
-		let result = ZoomOut::new(ZoomOutDivisors { min: 2.0, max: 2.0 })
-			.apply(image, &mut rng);
+		let result = ZoomOut::new(ZoomOutDivisors {
+			min: 2.0,
+			max: 2.0,
+		})
+		.apply(image, &mut rng);
 		assert_eq!(result.get_pixel(0, 0).0, [0, 0, 0]);
 	}
 
@@ -201,8 +257,11 @@ mod tests {
 	fn zoom_in_factor_one_preserves_pixels() {
 		let image = gradient_image(3, 3);
 		let mut rng = StdRng::seed_from_u64(42);
-		let result = ZoomIn::new(ZoomInFactors { min: 1.0, max: 1.0 })
-			.apply(image.clone(), &mut rng);
+		let result = ZoomIn::new(ZoomInFactors {
+			min: 1.0,
+			max: 1.0,
+		})
+		.apply(image.clone(), &mut rng);
 		assert_eq!(result, image);
 	}
 
@@ -210,8 +269,11 @@ mod tests {
 	fn zoom_out_divisor_one_preserves_pixels() {
 		let image = gradient_image(3, 3);
 		let mut rng = StdRng::seed_from_u64(42);
-		let result = ZoomOut::new(ZoomOutDivisors { min: 1.0, max: 1.0 })
-			.apply(image.clone(), &mut rng);
+		let result = ZoomOut::new(ZoomOutDivisors {
+			min: 1.0,
+			max: 1.0,
+		})
+		.apply(image.clone(), &mut rng);
 		assert_eq!(result, image);
 	}
 

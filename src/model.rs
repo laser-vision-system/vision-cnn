@@ -2,18 +2,39 @@
 
 use burn::{
 	nn::{
-		BatchNorm, BatchNormConfig, Dropout, DropoutConfig, Linear,
-		LinearConfig, PaddingConfig2d,
-		conv::{Conv2d, Conv2dConfig},
-		loss::{MseLoss, Reduction},
+		BatchNorm,
+		BatchNormConfig,
+		Dropout,
+		DropoutConfig,
+		Linear,
+		LinearConfig,
+		PaddingConfig2d,
+		conv::{
+			Conv2d,
+			Conv2dConfig,
+		},
+		loss::{
+			MseLoss,
+			Reduction,
+		},
 		pool::{
-			AdaptiveAvgPool2d, AdaptiveAvgPool2dConfig, MaxPool2d,
+			AdaptiveAvgPool2d,
+			AdaptiveAvgPool2dConfig,
+			MaxPool2d,
 			MaxPool2dConfig,
 		},
 	},
 	prelude::*,
-	tensor::{activation::relu, backend::AutodiffBackend},
-	train::{InferenceStep, RegressionOutput, TrainOutput, TrainStep},
+	tensor::{
+		activation::relu,
+		backend::AutodiffBackend,
+	},
+	train::{
+		InferenceStep,
+		RegressionOutput,
+		TrainOutput,
+		TrainStep,
+	},
 };
 
 use crate::data::LaserBatch;
@@ -29,7 +50,10 @@ pub struct LaserModelConfig {
 
 impl LaserModelConfig {
 	/// Create a [`LaserModel`] with the configured hyper-parameters.
-	pub fn init<B>(&self, device: &B::Device) -> LaserModel<B>
+	pub fn init<B>(
+		&self,
+		device: &B::Device,
+	) -> LaserModel<B>
 	where
 		B: Backend,
 	{
@@ -75,7 +99,10 @@ impl<B: Backend> LaserModel<B> {
 	/// # Shapes
 	///   - Images \[`batch_size`, channels, height, width\]
 	///   - Output \[`batch_size`, 1\]
-	pub fn forward(&self, images: Tensor<B, 4>) -> Tensor<B, 2> {
+	pub fn forward(
+		&self,
+		images: Tensor<B, 4>,
+	) -> Tensor<B, 2> {
 		let [batch_size, channels, _, _] = images.dims();
 		debug_assert_eq!(channels, 3, "expected an RGB tensor");
 
@@ -96,7 +123,10 @@ impl<B: Backend> LaserModel<B> {
 		self.prediction.forward(x) // [batch_size, 1]
 	}
 
-	pub fn forward_step(&self, batch: LaserBatch<B>) -> RegressionOutput<B> {
+	pub fn forward_step(
+		&self,
+		batch: LaserBatch<B>,
+	) -> RegressionOutput<B> {
 		let targets: Tensor<B, 2> = batch.targets.unsqueeze_dim(1);
 		let output = self.forward(batch.images);
 		let loss = MseLoss::new().forward(
@@ -113,7 +143,10 @@ impl<B: AutodiffBackend> TrainStep for LaserModel<B> {
 	type Input = LaserBatch<B>;
 	type Output = RegressionOutput<B>;
 
-	fn step(&self, batch: Self::Input) -> TrainOutput<Self::Output> {
+	fn step(
+		&self,
+		batch: Self::Input,
+	) -> TrainOutput<Self::Output> {
 		let item = self.forward_step(batch);
 		TrainOutput::new(self, item.loss.backward(), item)
 	}
@@ -123,14 +156,20 @@ impl<B: Backend> InferenceStep for LaserModel<B> {
 	type Input = LaserBatch<B>;
 	type Output = RegressionOutput<B>;
 
-	fn step(&self, batch: Self::Input) -> Self::Output {
+	fn step(
+		&self,
+		batch: Self::Input,
+	) -> Self::Output {
 		self.forward_step(batch)
 	}
 }
 
 #[cfg(test)]
 mod tests {
-	use burn::{backend::Flex, tensor::Tensor};
+	use burn::{
+		backend::Flex,
+		tensor::Tensor,
+	};
 
 	use super::*;
 

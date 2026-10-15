@@ -3,9 +3,16 @@
 use std::path::Path;
 
 use burn::prelude::Backend;
-use burn_store::{BurnpackError, BurnpackStore, ModuleSnapshot as _};
+use burn_store::{
+	BurnpackError,
+	BurnpackStore,
+	ModuleSnapshot as _,
+};
 
-use crate::model::{LaserModel, LaserModelConfig};
+use crate::model::{
+	LaserModel,
+	LaserModelConfig,
+};
 
 /// Export model tensors in Burn's native Burnpack format.
 pub fn export_model<B, P>(
@@ -39,10 +46,14 @@ where
 #[cfg(test)]
 mod tests {
 	use std::{
-		env, fs,
+		env,
+		fs,
 		path::PathBuf,
 		process,
-		sync::atomic::{AtomicUsize, Ordering},
+		sync::atomic::{
+			AtomicUsize,
+			Ordering,
+		},
 	};
 
 	use burn::backend::Flex;

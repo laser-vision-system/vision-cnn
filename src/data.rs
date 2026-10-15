@@ -6,7 +6,12 @@ use dataset_loader::{
 	Splitable,
 	dataset::LaserDatasetSplit,
 	item::LaserItem,
-	sources::{analogous_laser, in_lab_single_laser, synthetic_1, synthetic_2},
+	sources::{
+		analogous_laser,
+		in_lab_single_laser,
+		synthetic_1,
+		synthetic_2,
+	},
 };
 
 const TRAIN_WEIGHT: NonZeroU8 = match NonZeroU8::new(80) {
@@ -20,9 +25,19 @@ pub mod augmentation;
 pub mod batching;
 pub mod mapping;
 
-pub use augmentation::{ImageStep, NoOp};
-pub use batching::{AugmentedLaserBatcher, LaserBatch, LaserBatcher};
-pub use mapping::{LaserItemMapper, LoadedLaserItem};
+pub use augmentation::{
+	ImageStep,
+	NoOp,
+};
+pub use batching::{
+	AugmentedLaserBatcher,
+	LaserBatch,
+	LaserBatcher,
+};
+pub use mapping::{
+	LaserItemMapper,
+	LoadedLaserItem,
+};
 
 type InternalDatasetSplit<I, T> =
 	LaserDatasetSplit<LaserItemMapper, I, LoadedLaserItem<T>>;
@@ -174,8 +189,8 @@ pub fn analogous_laser_train_val_splits()
 	split_train_validate(dataset, TRAIN_WEIGHT)
 }
 
-/// A function to load the in lab single laser dataset into the train/validate/test
-/// splits.
+/// A function to load the in lab single laser dataset into the
+/// train/validate/test splits.
 pub fn in_lab_single_laser_splits() -> (
 	InLabSingleLaserDatasetSplit,
 	InLabSingleLaserDatasetSplit,
@@ -215,7 +230,11 @@ pub fn in_lab_single_laser_train_val_splits()
 #[cfg(test)]
 mod tests {
 	use burn::data::dataset::Dataset;
-	use dataset_loader::{Split, SplitType, Splitable};
+	use dataset_loader::{
+		Split,
+		SplitType,
+		Splitable,
+	};
 
 	use super::*;
 
@@ -230,7 +249,10 @@ mod tests {
 	}
 
 	impl Dataset<usize> for DummyDataset {
-		fn get(&self, index: usize) -> Option<usize> {
+		fn get(
+			&self,
+			index: usize,
+		) -> Option<usize> {
 			self.values.get(index).copied()
 		}
 

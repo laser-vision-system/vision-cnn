@@ -3,20 +3,35 @@
 pub mod result;
 
 use std::{
-	io::{Error as IoError, ErrorKind},
+	io::{
+		Error as IoError,
+		ErrorKind,
+	},
 	num::NonZeroUsize,
 	path::Path,
 };
 
-use burn::data::dataset::Dataset;
 use burn::{
-	data::dataloader::batcher::Batcher as _, prelude::*, tensor::Element,
+	data::{
+		dataloader::batcher::Batcher as _,
+		dataset::Dataset,
+	},
+	prelude::*,
+	tensor::Element,
 };
 use dataset_loader::item::NumericLike;
-use result::{InferenceResults, SampleInference};
+use result::{
+	InferenceResults,
+	SampleInference,
+};
 
 use crate::{
-	data::{IntensityValType, LaserBatch, LaserBatcher, LoadedLaserItem},
+	data::{
+		IntensityValType,
+		LaserBatch,
+		LaserBatcher,
+		LoadedLaserItem,
+	},
 	model::LaserModel,
 	persistence,
 	training::TrainingConfig,
@@ -86,7 +101,10 @@ where
 	Ok(InferenceResults(samples))
 }
 
-fn load_model<B>(artefact_dir: &str, device: &B::Device) -> LaserModel<B>
+fn load_model<B>(
+	artefact_dir: &str,
+	device: &B::Device,
+) -> LaserModel<B>
 where
 	B: Backend,
 {
@@ -106,11 +124,13 @@ where
 {
 	items
 		.iter()
-		.map(|item| SampleMetadata {
-			image_path: item.image_path.clone(),
-			expected_intensity: item.intensity,
-			position: item.position.clone(),
-			source_fields: item.source_fields.clone(),
+		.map(|item| {
+			SampleMetadata {
+				image_path: item.image_path.clone(),
+				expected_intensity: item.intensity,
+				position: item.position.clone(),
+				source_fields: item.source_fields.clone(),
+			}
 		})
 		.collect()
 }
@@ -118,18 +138,20 @@ where
 // NOTE: This function is basically the same as the above, but less generic.
 //   Can they be combined?
 fn collect_evaluation_metadata<T>(
-	items: &[LoadedLaserItem<T>],
+	items: &[LoadedLaserItem<T>]
 ) -> Vec<SampleMetadata<IntensityValType>>
 where
 	T: NumericLike + Into<IntensityValType>,
 {
 	items
 		.iter()
-		.map(|item| SampleMetadata {
-			image_path: item.image_path.clone(),
-			expected_intensity: item.intensity.into(),
-			position: item.position.clone(),
-			source_fields: item.source_fields.clone(),
+		.map(|item| {
+			SampleMetadata {
+				image_path: item.image_path.clone(),
+				expected_intensity: item.intensity.into(),
+				position: item.position.clone(),
+				source_fields: item.source_fields.clone(),
+			}
 		})
 		.collect()
 }
@@ -145,7 +167,10 @@ where
 	LaserBatcher.batch(items, device)
 }
 
-fn predict<B, T>(model: &LaserModel<B>, batch: LaserBatch<B>) -> Vec<T>
+fn predict<B, T>(
+	model: &LaserModel<B>,
+	batch: LaserBatch<B>,
+) -> Vec<T>
 where
 	B: Backend,
 	T: NumericLike + Into<IntensityValType> + Element,
@@ -168,12 +193,14 @@ where
 	let samples = metadata
 		.into_iter()
 		.zip(predictions)
-		.map(|(sample, predicted_intensity)| SampleInference {
-			image_path: sample.image_path,
-			position: sample.position,
-			expected_intensity: sample.expected_intensity,
-			predicted_intensity,
-			source_fields: sample.source_fields,
+		.map(|(sample, predicted_intensity)| {
+			SampleInference {
+				image_path: sample.image_path,
+				position: sample.position,
+				expected_intensity: sample.expected_intensity,
+				predicted_intensity,
+				source_fields: sample.source_fields,
+			}
 		})
 		.collect();
 	InferenceResults(samples)
@@ -199,7 +226,7 @@ mod tests {
 
 		assert_eq!(metadata.len(), 1);
 		assert!(metadata.first().is_some_and(|sample| {
-			(sample.expected_intensity - 7.0_f32).abs() < f32::EPSILON
+			(sample.expected_intensity - 7f32).abs() < f32::EPSILON
 				&& sample.position.as_deref() == Some("sample-a")
 				&& sample.source_fields == [("source", "dummy".to_owned())]
 		}));

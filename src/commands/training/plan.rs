@@ -1,14 +1,23 @@
 use std::{
 	error::Error,
-	io::{Error as IoError, ErrorKind},
+	io::{
+		Error as IoError,
+		ErrorKind,
+	},
 	path::Path,
 };
 
-use burn::{optim::AdamConfig, prelude::Config as _};
+use burn::{
+	optim::AdamConfig,
+	prelude::Config as _,
+};
 
 use crate::{
 	model::LaserModelConfig,
-	training::{TrainingConfig, latest_checkpoint_epoch},
+	training::{
+		TrainingConfig,
+		latest_checkpoint_epoch,
+	},
 };
 
 pub(super) struct TrainingPlan {
@@ -29,7 +38,7 @@ impl TrainingPlan {
 }
 
 pub(super) fn load(
-	resume_dir: Option<&Path>,
+	resume_dir: Option<&Path>
 ) -> Result<TrainingPlan, Box<dyn Error>> {
 	match resume_dir {
 		Some(directory) => load_resume_plan(directory),

@@ -1,6 +1,9 @@
 use dataset_loader::item::ImageType;
 use image::imageops::huerotate;
-use rand::{RngExt as _, rngs::StdRng};
+use rand::{
+	RngExt as _,
+	rngs::StdRng,
+};
 
 use super::ImageStep;
 
@@ -11,8 +14,14 @@ struct HueRange {
 }
 
 impl HueRange {
-	fn new(min: i32, max: i32) -> Option<Self> {
-		(min < max).then_some(Self { min, max })
+	fn new(
+		min: i32,
+		max: i32,
+	) -> Option<Self> {
+		(min < max).then_some(Self {
+			min,
+			max,
+		})
 	}
 }
 
@@ -28,7 +37,10 @@ pub struct HueRotate {
 
 impl HueRotate {
 	/// Creates a hue rotation in the half-open degree range `min..max`.
-	pub fn new(min: i32, max: i32) -> Option<Self> {
+	pub fn new(
+		min: i32,
+		max: i32,
+	) -> Option<Self> {
 		Some(Self {
 			range: HueRange::new(min, max)?,
 		})
@@ -38,13 +50,20 @@ impl HueRotate {
 impl Default for HueRotate {
 	fn default() -> Self {
 		Self {
-			range: HueRange { min: 0, max: 360 },
+			range: HueRange {
+				min: 0,
+				max: 360,
+			},
 		}
 	}
 }
 
 impl ImageStep for HueRotate {
-	fn apply(&self, image: ImageType, rng: &mut StdRng) -> ImageType {
+	fn apply(
+		&self,
+		image: ImageType,
+		rng: &mut StdRng,
+	) -> ImageType {
 		let value = rng.random_range(self.range.min..self.range.max);
 		if value.rem_euclid(360_i32) == 0_i32 {
 			return image;

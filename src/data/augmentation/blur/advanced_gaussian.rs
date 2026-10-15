@@ -1,5 +1,8 @@
 use dataset_loader::item::ImageType;
-use image::imageops::{GaussianBlurParameters, blur_advanced};
+use image::imageops::{
+	GaussianBlurParameters,
+	blur_advanced,
+};
 use rand::rngs::StdRng;
 
 use super::super::ImageStep;
@@ -12,7 +15,11 @@ pub struct GaussianAdvanced {
 }
 
 impl ImageStep for GaussianAdvanced {
-	fn apply(&self, image: ImageType, _rng: &mut StdRng) -> ImageType {
+	fn apply(
+		&self,
+		image: ImageType,
+		_rng: &mut StdRng,
+	) -> ImageType {
 		blur_advanced(&image, self.parameters)
 	}
 }
@@ -70,8 +77,10 @@ mod tests {
 	fn custom_parameters_are_applied() {
 		let original = impulse_image();
 		let parameters = GaussianBlurParameters::new_from_radius(4.0);
-		let image = GaussianAdvanced { parameters }
-			.apply(original.clone(), &mut StdRng::seed_from_u64(42));
+		let image = GaussianAdvanced {
+			parameters,
+		}
+		.apply(original.clone(), &mut StdRng::seed_from_u64(42));
 		assert_eq!(image.dimensions(), original.dimensions());
 		assert_ne!(image, original);
 	}

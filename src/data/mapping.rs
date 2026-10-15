@@ -4,7 +4,11 @@
 )]
 
 use burn::data::dataset::transform::Mapper;
-use dataset_loader::item::{ImageType, LaserItem, NumericLike};
+use dataset_loader::item::{
+	ImageType,
+	LaserItem,
+	NumericLike,
+};
 
 /// The data-structure used post-mapping.
 #[derive(Debug, Clone)]
@@ -24,7 +28,10 @@ where
 	I: LaserItem<IntensityType = T> + Send + Sync + Clone,
 	T: NumericLike,
 {
-	fn map(&self, item: &I) -> LoadedLaserItem<T> {
+	fn map(
+		&self,
+		item: &I,
+	) -> LoadedLaserItem<T> {
 		LoadedLaserItem {
 			image: item.load().expect("the image should not fail to load"),
 			image_path: item.get_image_path().to_string(),

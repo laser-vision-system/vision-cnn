@@ -1,4 +1,7 @@
-use std::fmt::{self, Display};
+use std::fmt::{
+	self,
+	Display,
+};
 
 use dataset_loader::item::NumericLike;
 
@@ -24,7 +27,10 @@ impl<T> SampleInference<T>
 where
 	T: NumericLike,
 {
-	fn row(&self, field_names: &[&str]) -> Vec<String> {
+	fn row(
+		&self,
+		field_names: &[&str],
+	) -> Vec<String> {
 		[
 			self.position.clone().unwrap_or_default(),
 			format!("{:.3}", self.expected_intensity),
@@ -45,7 +51,10 @@ impl<T> Display for SampleInference<T>
 where
 	T: NumericLike,
 {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+	fn fmt(
+		&self,
+		f: &mut fmt::Formatter<'_>,
+	) -> fmt::Result {
 		if let Some(position) = &self.position {
 			write!(f, "Position: {position}")?;
 		}
@@ -83,7 +92,10 @@ where
 		names
 	}
 
-	fn rows(&self, field_names: &[&str]) -> Vec<Vec<String>> {
+	fn rows(
+		&self,
+		field_names: &[&str],
+	) -> Vec<Vec<String>> {
 		self.0
 			.iter()
 			.map(|result| result.row(field_names))
@@ -95,7 +107,10 @@ impl<T> Display for InferenceResults<T>
 where
 	T: NumericLike,
 {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+	fn fmt(
+		&self,
+		f: &mut fmt::Formatter<'_>,
+	) -> fmt::Result {
 		let field_names = self.source_field_names();
 		let headers = table_headers(&field_names);
 		let rows = self.rows(&field_names);
@@ -117,7 +132,10 @@ fn table_headers(field_names: &[&str]) -> Vec<String> {
 		.collect()
 }
 
-fn column_widths(headers: &[String], rows: &[Vec<String>]) -> Vec<usize> {
+fn column_widths(
+	headers: &[String],
+	rows: &[Vec<String>],
+) -> Vec<usize> {
 	let mut widths = headers.iter().map(String::len).collect::<Vec<_>>();
 	for row in rows {
 		for (width, cell) in widths.iter_mut().zip(row) {

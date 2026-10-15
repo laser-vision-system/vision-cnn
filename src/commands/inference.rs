@@ -4,21 +4,34 @@ mod evaluate;
 
 use std::{
 	error::Error,
-	io::{Error as IoError, ErrorKind},
+	io::{
+		Error as IoError,
+		ErrorKind,
+	},
 	num::NonZeroUsize,
 	path::PathBuf,
 };
 
 use burn::{
-	backend::{Cuda, cuda::CudaDevice},
+	backend::{
+		Cuda,
+		cuda::CudaDevice,
+	},
 	data::dataset::Dataset,
 	tensor::Element,
 };
-use clap::{Args, ValueEnum};
+use clap::{
+	Args,
+	ValueEnum,
+};
 use dataset_loader::item::NumericLike;
 
 use super::DatasetChoice;
-use crate::data::{self, IntensityValType, LoadedLaserItem};
+use crate::data::{
+	self,
+	IntensityValType,
+	LoadedLaserItem,
+};
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum EvaluationSplit {

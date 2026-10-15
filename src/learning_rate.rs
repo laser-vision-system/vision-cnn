@@ -1,4 +1,7 @@
-use burn::{optim::lr_scheduler::LrScheduler, tensor::backend::Backend};
+use burn::{
+	optim::lr_scheduler::LrScheduler,
+	tensor::backend::Backend,
+};
 
 /// Inverse-time decay scheduler mirroring the Python prototype's
 /// `InverseTimeDecay` behaviour.
@@ -12,7 +15,11 @@ pub struct InverseTimeDecayLrScheduler {
 
 impl InverseTimeDecayLrScheduler {
 	/// Create a new inverse-time decay scheduler.
-	pub fn new(initial_lr: f64, decay_steps: usize, decay_rate: f64) -> Self {
+	pub fn new(
+		initial_lr: f64,
+		decay_steps: usize,
+		decay_rate: f64,
+	) -> Self {
 		Self {
 			initial_lr,
 			decay_steps,
@@ -25,7 +32,10 @@ impl InverseTimeDecayLrScheduler {
 		clippy::cast_precision_loss,
 		reason = "usize is needed to account for long training runs"
 	)]
-	fn learning_rate_at(&self, step: usize) -> f64 {
+	fn learning_rate_at(
+		&self,
+		step: usize,
+	) -> f64 {
 		if self.decay_steps == 0 {
 			return self.initial_lr;
 		}
@@ -52,7 +62,10 @@ impl LrScheduler for InverseTimeDecayLrScheduler {
 		self.step_count
 	}
 
-	fn load_record<B>(mut self, record: Self::Record<B>) -> Self
+	fn load_record<B>(
+		mut self,
+		record: Self::Record<B>,
+	) -> Self
 	where
 		B: Backend,
 	{

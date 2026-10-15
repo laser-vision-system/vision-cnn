@@ -5,12 +5,22 @@ mod plan;
 
 use std::{
 	error::Error,
-	io::{Error as IoError, ErrorKind},
-	path::{Path, PathBuf},
+	io::{
+		Error as IoError,
+		ErrorKind,
+	},
+	path::{
+		Path,
+		PathBuf,
+	},
 };
 
 use burn::{
-	backend::{Autodiff, Cuda, cuda::CudaDevice},
+	backend::{
+		Autodiff,
+		Cuda,
+		cuda::CudaDevice,
+	},
 	data::dataset::Dataset,
 };
 use clap::Args;
@@ -19,10 +29,15 @@ use dataset_loader::item::NumericLike;
 use super::DatasetChoice;
 use crate::{
 	data::{
-		self, ImageStep as _, NoOp,
+		self,
+		ImageStep as _,
+		NoOp,
 		augmentation::{
 			Sequence,
-			flip::{RandomHorizontalFlip, RandomVerticalFlip},
+			flip::{
+				RandomHorizontalFlip,
+				RandomVerticalFlip,
+			},
 			hue::HueRotate,
 		},
 	},

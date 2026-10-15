@@ -1,6 +1,12 @@
 use dataset_loader::item::ImageType;
-use image::imageops::{flip_horizontal_in_place, flip_vertical_in_place};
-use rand::{RngExt as _, rngs::StdRng};
+use image::imageops::{
+	flip_horizontal_in_place,
+	flip_vertical_in_place,
+};
+use rand::{
+	RngExt as _,
+	rngs::StdRng,
+};
 
 use super::ImageStep;
 
@@ -43,7 +49,11 @@ impl Default for RandomHorizontalFlip {
 }
 
 impl ImageStep for RandomHorizontalFlip {
-	fn apply(&self, mut image: ImageType, rng: &mut StdRng) -> ImageType {
+	fn apply(
+		&self,
+		mut image: ImageType,
+		rng: &mut StdRng,
+	) -> ImageType {
 		if rng.random_bool(self.probability.0) {
 			flip_horizontal_in_place(&mut image);
 		}
@@ -80,7 +90,11 @@ impl Default for RandomVerticalFlip {
 }
 
 impl ImageStep for RandomVerticalFlip {
-	fn apply(&self, mut image: ImageType, rng: &mut StdRng) -> ImageType {
+	fn apply(
+		&self,
+		mut image: ImageType,
+		rng: &mut StdRng,
+	) -> ImageType {
 		if rng.random_bool(self.probability.0) {
 			flip_vertical_in_place(&mut image);
 		}

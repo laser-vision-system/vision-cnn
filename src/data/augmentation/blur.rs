@@ -6,9 +6,18 @@ mod gaussian;
 pub use advanced_gaussian::GaussianAdvanced;
 pub use box_filter::BoxFilter;
 use dataset_loader::item::ImageType;
-pub use fast_gaussian::{GaussianFast, RandomGaussianFast};
-pub use gaussian::{Gaussian, RandomGaussian};
-use rand::{RngExt as _, rngs::StdRng};
+pub use fast_gaussian::{
+	GaussianFast,
+	RandomGaussianFast,
+};
+pub use gaussian::{
+	Gaussian,
+	RandomGaussian,
+};
+use rand::{
+	RngExt as _,
+	rngs::StdRng,
+};
 
 #[derive(Clone, Copy, Debug, Default)]
 struct BlurSigma(f32);
@@ -26,12 +35,21 @@ struct BlurSigmaRange {
 }
 
 impl BlurSigmaRange {
-	fn new(min: f32, max: f32) -> Option<Self> {
+	fn new(
+		min: f32,
+		max: f32,
+	) -> Option<Self> {
 		(min.is_finite() && max.is_finite() && min >= 0.0 && min < max)
-			.then_some(Self { min, max })
+			.then_some(Self {
+				min,
+				max,
+			})
 	}
 
-	fn sample(self, rng: &mut StdRng) -> BlurSigma {
+	fn sample(
+		self,
+		rng: &mut StdRng,
+	) -> BlurSigma {
 		BlurSigma(rng.random_range(self.min..self.max))
 	}
 }
