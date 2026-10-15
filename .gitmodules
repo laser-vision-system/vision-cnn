@@ -1,0 +1,15 @@
+[submodule "dataset-loader"]
+	path = dataset-loader
+	url = ../dataset-loader.git
+[submodule "datasets/synthetic_1"]
+	path = datasets/synthetic_1
+	url = https://huggingface.co/datasets/COS40005-P12/synthetic_1.git
+[submodule "datasets/synthetic_2"]
+	path = datasets/synthetic_2
+	url = https://huggingface.co/datasets/COS40005-P12/synthetic_2.git
+[submodule "datasets/analogous_laser"]
+	path = datasets/analogous_laser
+	url = https://huggingface.co/datasets/COS40005-P12/analogous_laser.git
+[submodule "datasets/in_lab_single_laser"]
+	path = datasets/in_lab_single_laser
+	url = https://huggingface.co/datasets/COS40005-P12/in_lab_single_laser.git
