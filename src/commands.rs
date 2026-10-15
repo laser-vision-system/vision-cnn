@@ -1,7 +1,7 @@
 //! Command workflows used by the CNN application.
 
-mod inference;
-mod training;
+mod infer;
+mod train;
 
 use std::error::Error;
 
@@ -57,11 +57,11 @@ struct Cli {
 #[derive(Subcommand)]
 enum CliCommand {
 	#[command(about = "Train a laser intensity model")]
-	Train(training::Arguments),
+	Train(train::Arguments),
 	#[command(
 		about = "Run inference or evaluate a trained laser intensity model"
 	)]
-	Infer(inference::Arguments),
+	Infer(infer::Arguments),
 }
 
 /// The main entry-point.
@@ -71,7 +71,7 @@ enum CliCommand {
 /// If starting the training or inference fails for any reason.
 pub fn run() -> Result<(), Box<dyn Error>> {
 	match Cli::parse().command {
-		CliCommand::Train(arguments) => training::run(&arguments),
-		CliCommand::Infer(arguments) => inference::run(&arguments),
+		CliCommand::Train(arguments) => train::run(&arguments),
+		CliCommand::Infer(arguments) => infer::run(&arguments),
 	}
 }
