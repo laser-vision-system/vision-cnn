@@ -20,7 +20,10 @@ use burn::{
 		FullPrecisionSettings,
 		NamedMpkGzFileRecorder,
 	},
-	tensor::backend::AutodiffBackend,
+	tensor::{
+		Element,
+		backend::AutodiffBackend,
+	},
 	train::{
 		Learner,
 		MetricEarlyStoppingStrategy,
@@ -38,7 +41,6 @@ use burn::{
 		},
 	},
 };
-use dataset_loader::item::NumericLike;
 
 use crate::{
 	data::{
@@ -157,7 +159,7 @@ pub fn train<B, D, T, AT, AV>(
 ) where
 	B: AutodiffBackend,
 	D: Dataset<LoadedLaserItem<T>> + 'static,
-	T: NumericLike + Into<IntensityValType> + 'static,
+	T: Element + Into<IntensityValType> + 'static,
 	AT: ImageStep + 'static,
 	AV: ImageStep + 'static,
 {

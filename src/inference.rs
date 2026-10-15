@@ -19,7 +19,6 @@ use burn::{
 	prelude::*,
 	tensor::Element,
 };
-use dataset_loader::item::NumericLike;
 use result::{
 	InferenceResults,
 	SampleInference,
@@ -51,7 +50,7 @@ pub fn infer<B, T>(
 ) -> InferenceResults<T>
 where
 	B: Backend,
-	T: NumericLike + Into<IntensityValType> + Element,
+	T: Element + Into<IntensityValType>,
 {
 	let model = load_model::<B>(artefact_dir, device);
 	let metadata = collect_metadata(&items);
@@ -73,7 +72,7 @@ pub fn infer_dataset<B, T, D>(
 ) -> Result<InferenceResults<IntensityValType>, IoError>
 where
 	B: Backend,
-	T: NumericLike + Into<IntensityValType> + Element,
+	T: Element + Into<IntensityValType>,
 	D: Dataset<LoadedLaserItem<T>>,
 {
 	let model = load_model::<B>(artefact_dir, device);
@@ -120,7 +119,7 @@ where
 
 fn collect_metadata<T>(items: &[LoadedLaserItem<T>]) -> Vec<SampleMetadata<T>>
 where
-	T: NumericLike,
+	T: Element,
 {
 	items
 		.iter()
@@ -141,7 +140,7 @@ fn collect_evaluation_metadata<T>(
 	items: &[LoadedLaserItem<T>]
 ) -> Vec<SampleMetadata<IntensityValType>>
 where
-	T: NumericLike + Into<IntensityValType>,
+	T: Element + Into<IntensityValType>,
 {
 	items
 		.iter()
@@ -162,7 +161,7 @@ fn create_batch<B, T>(
 ) -> LaserBatch<B>
 where
 	B: Backend,
-	T: NumericLike + Into<IntensityValType>,
+	T: Element + Into<IntensityValType>,
 {
 	LaserBatcher.batch(items, device)
 }
@@ -173,7 +172,7 @@ fn predict<B, T>(
 ) -> Vec<T>
 where
 	B: Backend,
-	T: NumericLike + Into<IntensityValType> + Element,
+	T: Element + Into<IntensityValType>,
 {
 	model
 		.forward(batch.images)
@@ -188,7 +187,7 @@ fn assemble_results<T>(
 	predictions: Vec<T>,
 ) -> InferenceResults<T>
 where
-	T: NumericLike,
+	T: Element,
 {
 	let samples = metadata
 		.into_iter()

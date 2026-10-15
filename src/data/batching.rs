@@ -10,11 +10,9 @@ use std::{
 use burn::{
 	data::dataloader::batcher::Batcher,
 	prelude::*,
+	tensor::Element,
 };
-use dataset_loader::item::{
-	ImageType,
-	NumericLike,
-};
+use dataset_loader::item::ImageType;
 use rand::{
 	SeedableRng as _,
 	rngs::StdRng,
@@ -46,7 +44,7 @@ pub struct LaserBatcher;
 impl<B, T> Batcher<B, LoadedLaserItem<T>, LaserBatch<B>> for LaserBatcher
 where
 	B: Backend,
-	T: NumericLike + Into<IntensityValType>,
+	T: Element + Into<IntensityValType>,
 {
 	fn batch(
 		&self,
@@ -86,7 +84,7 @@ impl<B, T, P> Batcher<B, LoadedLaserItem<T>, LaserBatch<B>>
 	for AugmentedLaserBatcher<P>
 where
 	B: Backend,
-	T: NumericLike + Into<IntensityValType>,
+	T: Element + Into<IntensityValType>,
 	P: ImageStep,
 {
 	fn batch(
@@ -109,7 +107,7 @@ fn batch_items<B, T, F>(
 ) -> LaserBatch<B>
 where
 	B: Backend,
-	T: NumericLike + Into<IntensityValType>,
+	T: Element + Into<IntensityValType>,
 	F: FnMut(ImageType) -> ImageType,
 {
 	let targets = items

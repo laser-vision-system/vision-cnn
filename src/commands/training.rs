@@ -22,9 +22,9 @@ use burn::{
 		cuda::CudaDevice,
 	},
 	data::dataset::Dataset,
+	tensor::Element,
 };
 use clap::Args;
-use dataset_loader::item::NumericLike;
 
 use super::DatasetChoice;
 use crate::{
@@ -112,7 +112,7 @@ fn run_training<T, D>(
 	val_split: D,
 ) -> Result<(), Box<dyn Error>>
 where
-	T: NumericLike + Into<data::IntensityValType> + 'static,
+	T: Element + Into<data::IntensityValType> + 'static,
 	D: Dataset<data::LoadedLaserItem<T>> + 'static,
 {
 	type TrainBackend = Cuda;

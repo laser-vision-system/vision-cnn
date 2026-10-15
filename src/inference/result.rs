@@ -3,13 +3,13 @@ use std::fmt::{
 	Display,
 };
 
-use dataset_loader::item::NumericLike;
+use burn::tensor::Element;
 
 /// The metadata and inferred intensity for one dataset sample.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SampleInference<T>
 where
-	T: NumericLike,
+	T: Element,
 {
 	/// Canonical image path identifying this sample on the current machine.
 	pub image_path: String,
@@ -25,7 +25,7 @@ where
 
 impl<T> SampleInference<T>
 where
-	T: NumericLike,
+	T: Element,
 {
 	fn row(
 		&self,
@@ -49,7 +49,7 @@ where
 
 impl<T> Display for SampleInference<T>
 where
-	T: NumericLike,
+	T: Element,
 {
 	fn fmt(
 		&self,
@@ -74,11 +74,11 @@ where
 #[derive(Clone, Debug, PartialEq)]
 pub struct InferenceResults<T>(pub Vec<SampleInference<T>>)
 where
-	T: NumericLike;
+	T: Element;
 
 impl<T> InferenceResults<T>
 where
-	T: NumericLike,
+	T: Element,
 {
 	fn source_field_names(&self) -> Vec<&'static str> {
 		let mut names = Vec::new();
@@ -105,7 +105,7 @@ where
 
 impl<T> Display for InferenceResults<T>
 where
-	T: NumericLike,
+	T: Element,
 {
 	fn fmt(
 		&self,

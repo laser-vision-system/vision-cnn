@@ -7,7 +7,7 @@ use std::{
 	io::Write,
 };
 
-use dataset_loader::item::NumericLike;
+use burn::tensor::Element;
 use serde::Serialize;
 
 use crate::inference::result::SampleInference;
@@ -112,7 +112,7 @@ impl EvaluationReport {
 	where
 		D: Into<String>,
 		S: Into<String>,
-		T: NumericLike + Into<f32>,
+		T: Element + Into<f32>,
 	{
 		let samples = results
 			.iter()

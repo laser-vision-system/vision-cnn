@@ -24,7 +24,6 @@ use clap::{
 	Args,
 	ValueEnum,
 };
-use dataset_loader::item::NumericLike;
 
 use super::DatasetChoice;
 use crate::data::{
@@ -124,7 +123,7 @@ fn run_split<T, D>(
 	device: &CudaDevice,
 ) -> Result<(), Box<dyn Error>>
 where
-	T: NumericLike + Into<IntensityValType> + Element,
+	T: Element + Into<IntensityValType>,
 	D: Dataset<LoadedLaserItem<T>>,
 {
 	if arguments.evaluate_all {

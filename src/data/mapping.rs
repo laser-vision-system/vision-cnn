@@ -3,16 +3,18 @@
 	reason = "Impossible to handle error inside mapper"
 )]
 
-use burn::data::dataset::transform::Mapper;
+use burn::{
+	data::dataset::transform::Mapper,
+	tensor::Element,
+};
 use dataset_loader::item::{
 	ImageType,
 	LaserItem,
-	NumericLike,
 };
 
 /// The data-structure used post-mapping.
 #[derive(Debug, Clone)]
-pub struct LoadedLaserItem<T: NumericLike> {
+pub struct LoadedLaserItem<T: Element> {
 	pub image: ImageType,
 	pub image_path: String,
 	pub intensity: T,
@@ -26,7 +28,7 @@ pub struct LaserItemMapper;
 impl<I, T> Mapper<I, LoadedLaserItem<T>> for LaserItemMapper
 where
 	I: LaserItem<IntensityType = T> + Send + Sync + Clone,
-	T: NumericLike,
+	T: Element,
 {
 	fn map(
 		&self,

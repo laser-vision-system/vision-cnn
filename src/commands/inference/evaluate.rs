@@ -25,7 +25,6 @@ use burn::{
 	prelude::Backend,
 	tensor::Element,
 };
-use dataset_loader::item::NumericLike;
 
 use crate::{
 	data::{
@@ -48,7 +47,7 @@ pub(super) fn infer_samples<B, T, D>(
 ) -> Result<(), Box<dyn Error>>
 where
 	B: Backend,
-	T: NumericLike + Into<IntensityValType> + Element,
+	T: Element + Into<IntensityValType>,
 	D: Dataset<LoadedLaserItem<T>>,
 {
 	let model_dir = model_dir.to_str().ok_or_else(|| {
@@ -71,7 +70,7 @@ pub(super) fn evaluate_all<B, T, D>(
 ) -> Result<(), Box<dyn Error>>
 where
 	B: Backend,
-	T: NumericLike + Into<IntensityValType> + Element,
+	T: Element + Into<IntensityValType>,
 	D: Dataset<LoadedLaserItem<T>>,
 {
 	let model_dir = model_dir.to_str().ok_or_else(|| {
@@ -132,7 +131,7 @@ fn print_metrics(metrics: &RegressionMetrics) {
 
 fn print_results<T>(results: &inference::result::InferenceResults<T>)
 where
-	T: NumericLike,
+	T: Element,
 {
 	println!("{results}");
 }
