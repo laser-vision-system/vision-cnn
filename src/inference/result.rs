@@ -188,13 +188,13 @@ mod tests {
 			image_path: "dummy/sample.png".to_owned(),
 			position: None,
 			source_fields: vec![],
-			expected_intensity: 12f32,
+			expected_intensity: 12_f32,
 			predicted_intensity: 11.75_f32,
 		};
 
 		assert_eq!(result.position, None);
 		assert!(result.source_fields.is_empty());
-		assert!((result.expected_intensity - 12f32).abs() < f32::EPSILON);
+		assert!((result.expected_intensity - 12_f32).abs() < f32::EPSILON);
 		assert!((result.predicted_intensity - 11.75_f32).abs() < f32::EPSILON);
 	}
 

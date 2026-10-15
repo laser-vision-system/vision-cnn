@@ -41,7 +41,7 @@ impl InverseTimeDecayLrScheduler {
 		}
 
 		let divisor =
-			1f64 + self.decay_rate * step as f64 / self.decay_steps as f64;
+			1_f64 + self.decay_rate * step as f64 / self.decay_steps as f64;
 		self.initial_lr / divisor
 	}
 }

@@ -226,7 +226,7 @@ mod tests {
 
 		assert_eq!(metadata.len(), 1);
 		assert!(metadata.first().is_some_and(|sample| {
-			(sample.expected_intensity - 7f32).abs() < f32::EPSILON
+			(sample.expected_intensity - 7_f32).abs() < f32::EPSILON
 				&& sample.position.as_deref() == Some("sample-a")
 				&& sample.source_fields == [("source", "dummy".to_owned())]
 		}));

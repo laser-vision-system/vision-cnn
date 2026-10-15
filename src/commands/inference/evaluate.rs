@@ -175,8 +175,8 @@ mod tests {
 		let samples = [SampleInference {
 			image_path: "dummy/sample.png".to_owned(),
 			position: Some("sample".to_owned()),
-			expected_intensity: 2f32,
-			predicted_intensity: 3f32,
+			expected_intensity: 2_f32,
+			predicted_intensity: 3_f32,
 			source_fields: Vec::new(),
 		}];
 		let report = EvaluationReport::new("dummy", "test", metrics, &samples);

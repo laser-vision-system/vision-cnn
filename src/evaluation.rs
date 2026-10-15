@@ -311,7 +311,7 @@ mod tests {
 		assert_eq!(metrics.sample_count, 3);
 		assert!((metrics.mean_squared_error - 5.0 / 3.0).abs() < 1e-12);
 		assert!(
-			(metrics.root_mean_squared_error - (5f64 / 3.0).sqrt()).abs()
+			(metrics.root_mean_squared_error - (5_f64 / 3.0).sqrt()).abs()
 				< 1e-12
 		);
 		assert!((metrics.mean_absolute_error - 1.0).abs() < 1e-12);
@@ -354,7 +354,7 @@ mod tests {
 		let results = [SampleInference {
 			image_path: "dummy/sample.png".to_owned(),
 			position: Some("capture, north".to_owned()),
-			expected_intensity: 5f32,
+			expected_intensity: 5_f32,
 			predicted_intensity: 4.5_f32,
 			source_fields: vec![("note", "quoted \"value\"".to_owned())],
 		}];
