@@ -26,10 +26,6 @@ impl HueRange {
 }
 
 /// Applies a random hue rotation in the half-open degree range `min..max`.
-#[expect(
-	clippy::module_name_repetitions,
-	reason = "This descriptive name is part of the public augmentation API"
-)]
 #[derive(Clone, Debug)]
 pub struct HueRotate {
 	range: HueRange,

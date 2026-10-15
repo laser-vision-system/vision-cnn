@@ -15,6 +15,10 @@ use crate::model::{
 };
 
 /// Export model tensors in Burn's native Burnpack format.
+///
+/// # Errors
+///
+/// If the model is unable to be saved into the store path.
 pub fn export_model<B, P>(
 	model: &LaserModel<B>,
 	path: P,
@@ -28,6 +32,10 @@ where
 }
 
 /// Load a Burnpack model export using the provided model configuration.
+///
+/// # Errors
+///
+/// If the model is unable to be loaded from the store path.
 pub fn load_model<B, P>(
 	config: &LaserModelConfig,
 	path: P,

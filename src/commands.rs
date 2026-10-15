@@ -43,6 +43,11 @@ enum CliCommand {
 	Infer(inference::Arguments),
 }
 
+/// The main entry-point.
+///
+/// # Errors
+///
+/// If starting the training or inference fails for any reason.
 pub fn run() -> Result<(), Box<dyn Error>> {
 	match Cli::parse().command {
 		CliCommand::Train(arguments) => training::run(&arguments),

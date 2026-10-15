@@ -1,7 +1,7 @@
+#![expect(clippy::expect_used, reason = "Not a problem")]
 #![expect(
-	clippy::expect_used,
-	clippy::module_name_repetitions,
-	reason = "Not a problem"
+	clippy::redundant_field_names,
+	reason = "Caused by Burn's `Config` derive"
 )]
 
 use std::{
@@ -136,6 +136,15 @@ fn steps_per_epoch(
 }
 
 /// Execute the training process.
+///
+/// # Panics
+///
+/// - If the config could not be saved.
+/// - If the model could not be exported.
+#[expect(
+	clippy::too_many_arguments,
+	reason = "These are the things that are needed to start training"
+)]
 pub fn train<B, D, T, AT, AV>(
 	artefact_dir: &str,
 	config: &TrainingConfig,

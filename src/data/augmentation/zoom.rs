@@ -1,7 +1,3 @@
-#![expect(
-	clippy::module_name_repetitions,
-	reason = "The types are variants within the module"
-)]
 use dataset_loader::item::ImageType;
 use image::imageops::{
 	FilterType,

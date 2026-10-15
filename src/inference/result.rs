@@ -193,7 +193,7 @@ mod tests {
 		};
 
 		assert_eq!(result.position, None);
-		assert!(result.source_fields.is_empty());
+		assert_eq!(result.source_fields, [] as [(&str, String); 0]);
 		assert!((result.expected_intensity - 12_f32).abs() < f32::EPSILON);
 		assert!((result.predicted_intensity - 11.75_f32).abs() < f32::EPSILON);
 	}

@@ -1,5 +1,3 @@
-#![expect(clippy::module_name_repetitions, reason = "Not a problem")]
-
 use burn::{
 	nn::{
 		BatchNorm,

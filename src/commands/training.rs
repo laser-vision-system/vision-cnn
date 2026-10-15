@@ -104,6 +104,7 @@ pub(super) fn run(arguments: &Arguments) -> Result<(), Box<dyn Error>> {
 	}
 }
 
+#[expect(clippy::expect_used, reason = "This should be a static assertion")]
 fn run_training<T, D>(
 	output_dir: &Path,
 	plan: &plan::TrainingPlan,

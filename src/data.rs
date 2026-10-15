@@ -5,7 +5,7 @@ use std::num::NonZeroU8;
 use dataset_loader::{
 	Splitable,
 	dataset::LaserDatasetSplit,
-	item::LaserItem,
+	item::LaserItem as _,
 	sources::{
 		analogous_laser,
 		in_lab_single_laser,
@@ -107,6 +107,10 @@ where
 
 /// A function to load the synthetic1 dataset into the train/validate/test
 /// splits.
+///
+/// # Panics
+///
+/// If dataset could not be loaded as the path.
 pub fn synthetic1_splits() -> (
 	Synthetic1DatasetSplit,
 	Synthetic1DatasetSplit,
@@ -122,6 +126,10 @@ pub fn synthetic1_splits() -> (
 }
 
 /// Load the first synthetic dataset into training and validation splits.
+///
+/// # Panics
+///
+/// If dataset could not be loaded as the path.
 pub fn synthetic1_train_val_splits()
 -> (Synthetic1DatasetSplit, Synthetic1DatasetSplit) {
 	let dataset = synthetic_1::get_dataset(
@@ -135,6 +143,10 @@ pub fn synthetic1_train_val_splits()
 
 /// A function to load the synthetic2 dataset into the train/validate/test
 /// splits.
+///
+/// # Panics
+///
+/// If dataset could not be loaded as the path.
 pub fn synthetic2_splits() -> (
 	Synthetic2DatasetSplit,
 	Synthetic2DatasetSplit,
@@ -150,6 +162,10 @@ pub fn synthetic2_splits() -> (
 }
 
 /// Load the second synthetic dataset into training and validation splits.
+///
+/// # Panics
+///
+/// If dataset could not be loaded as the path.
 pub fn synthetic2_train_val_splits()
 -> (Synthetic2DatasetSplit, Synthetic2DatasetSplit) {
 	let dataset = synthetic_2::get_dataset(
@@ -163,6 +179,10 @@ pub fn synthetic2_train_val_splits()
 
 /// A function to load the analogous laser dataset into the train/validate/test
 /// splits.
+///
+/// # Panics
+///
+/// If dataset could not be loaded as the path.
 pub fn analogous_laser_splits() -> (
 	AnalogousDatasetSplit,
 	AnalogousDatasetSplit,
@@ -178,6 +198,10 @@ pub fn analogous_laser_splits() -> (
 }
 
 /// Load the analogous laser dataset into training and validation splits.
+///
+/// # Panics
+///
+/// If dataset could not be loaded as the path.
 pub fn analogous_laser_train_val_splits()
 -> (AnalogousDatasetSplit, AnalogousDatasetSplit) {
 	let dataset = analogous_laser::get_dataset(
@@ -191,6 +215,10 @@ pub fn analogous_laser_train_val_splits()
 
 /// A function to load the in lab single laser dataset into the
 /// train/validate/test splits.
+///
+/// # Panics
+///
+/// If dataset could not be loaded as the path.
 pub fn in_lab_single_laser_splits() -> (
 	InLabSingleLaserDatasetSplit,
 	InLabSingleLaserDatasetSplit,
@@ -211,6 +239,10 @@ pub fn in_lab_single_laser_splits() -> (
 }
 
 /// Load the in lab single laser dataset into training and validation splits.
+///
+/// # Panics
+///
+/// If dataset could not be loaded as the path.
 pub fn in_lab_single_laser_train_val_splits()
 -> (InLabSingleLaserDatasetSplit, InLabSingleLaserDatasetSplit) {
 	let dataset = in_lab_single_laser::get_dataset(

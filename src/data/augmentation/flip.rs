@@ -21,10 +21,6 @@ impl FlipProbability {
 }
 
 /// Randomly mirrors an image left-to-right, in place.
-#[expect(
-	clippy::module_name_repetitions,
-	reason = "This descriptive name is part of the public augmentation API"
-)]
 #[derive(Clone, Debug)]
 pub struct RandomHorizontalFlip {
 	probability: FlipProbability,
@@ -62,10 +58,6 @@ impl ImageStep for RandomHorizontalFlip {
 }
 
 /// Randomly mirrors an image top-to-bottom, in place.
-#[expect(
-	clippy::module_name_repetitions,
-	reason = "This descriptive name is part of the public augmentation API"
-)]
 #[derive(Clone, Debug)]
 pub struct RandomVerticalFlip {
 	probability: FlipProbability,
