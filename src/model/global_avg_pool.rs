@@ -1,0 +1,55 @@
+use burn::{
+	module::{
+		Content,
+		DisplaySettings,
+		ModuleDisplay,
+	},
+	prelude::*,
+	tensor::module::adaptive_avg_pool2d,
+};
+
+/// Global average pooling operation for 2D data.
+///
+/// Collapses the remaining spatial information into the channels via averaging.
+#[derive(Module, Clone, Debug)]
+#[module(custom_display)]
+pub struct GlobalAvgPooling2d;
+
+impl GlobalAvgPooling2d {
+	/// Applies the forward pass on the input tensor.
+	///
+	/// See [`adaptive_avg_pool2d`](burn::tensor::module::adaptive_avg_pool2d) for
+	/// more information.
+	///
+	/// # Shapes
+	///
+	/// - input: `[batch_size, channels, height_in, width_in]`
+	/// - output: `[batch_size, channels]`
+	pub fn forward<B>(
+		&self,
+		input: Tensor<B, 4>,
+	) -> Tensor<B, 2>
+	where
+		B: Backend,
+	{
+		let [batch_size, channels, ..] = input.dims();
+
+		let x = adaptive_avg_pool2d(input, [1, 1]);
+		x.reshape([batch_size, channels])
+	}
+}
+
+impl ModuleDisplay for GlobalAvgPooling2d {
+	fn custom_settings(&self) -> Option<DisplaySettings> {
+		DisplaySettings::new()
+			.with_new_line_after_attribute(false)
+			.optional()
+	}
+
+	fn custom_content(
+		&self,
+		content: Content,
+	) -> Option<Content> {
+		content.optional()
+	}
+}

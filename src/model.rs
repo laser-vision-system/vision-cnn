@@ -1,32 +1,20 @@
+pub mod conv_block;
+pub mod global_avg_pool;
+
 use burn::{
 	nn::{
-		BatchNorm,
-		BatchNormConfig,
 		Dropout,
 		DropoutConfig,
 		Linear,
 		LinearConfig,
 		PaddingConfig2d,
-		conv::{
-			Conv2d,
-			Conv2dConfig,
-		},
 		loss::{
 			MseLoss,
 			Reduction,
 		},
-		pool::{
-			AdaptiveAvgPool2d,
-			AdaptiveAvgPool2dConfig,
-			MaxPool2d,
-			MaxPool2dConfig,
-		},
 	},
 	prelude::*,
-	tensor::{
-		activation::relu,
-		backend::AutodiffBackend,
-	},
+	tensor::backend::AutodiffBackend,
 	train::{
 		InferenceStep,
 		RegressionOutput,
@@ -35,6 +23,13 @@ use burn::{
 	},
 };
 
+use self::{
+	conv_block::{
+		ConvBlock,
+		ConvBlockConfig,
+	},
+	global_avg_pool::GlobalAvgPooling2d,
+};
 use crate::data::LaserBatch;
 
 /// Model hyper-parameters for the laser regression CNN.
@@ -56,21 +51,17 @@ impl LaserModelConfig {
 		B: Backend,
 	{
 		LaserModel {
-			read_head: Conv2dConfig::new([3, 16], [3, 3])
-				.with_padding(PaddingConfig2d::Same)
-				.init(device),
-			read_head_norm: BatchNormConfig::new(16)
+			read_head: ConvBlockConfig::new(3, 16, PaddingConfig2d::Same)
 				.with_momentum(self.batch_norm_momentum)
 				.init(device),
-			read_head_pool: MaxPool2dConfig::new([4, 4]).init(),
-			detail_extraction: Conv2dConfig::new([16, 8], [3, 3])
-				.with_padding(PaddingConfig2d::Same)
-				.init(device),
-			detail_extraction_norm: BatchNormConfig::new(8)
-				.with_momentum(self.batch_norm_momentum)
-				.init(device),
-			detail_extraction_pool: MaxPool2dConfig::new([4, 4]).init(),
-			avg_pool: AdaptiveAvgPool2dConfig::new([1, 1]).init(),
+			detail_extraction: ConvBlockConfig::new(
+				16,
+				8,
+				PaddingConfig2d::Same,
+			)
+			.with_momentum(self.batch_norm_momentum)
+			.init(device),
+			global_avg_pool: GlobalAvgPooling2d,
 			dropout: DropoutConfig::new(self.dropout).init(),
 			prediction: LinearConfig::new(8, 1).init(device),
 		}
@@ -79,14 +70,9 @@ impl LaserModelConfig {
 
 #[derive(Module, Debug)]
 pub struct LaserModel<B: Backend> {
-	read_head: Conv2d<B>,
-	read_head_norm: BatchNorm<B>,
-	read_head_pool: MaxPool2d,
-	detail_extraction: Conv2d<B>,
-	detail_extraction_norm: BatchNorm<B>,
-	detail_extraction_pool: MaxPool2d,
-	// Burn does not support GlobalAveragePooling2D
-	avg_pool: AdaptiveAvgPool2d,
+	read_head: ConvBlock<B>,
+	detail_extraction: ConvBlock<B>,
+	global_avg_pool: GlobalAvgPooling2d,
 	dropout: Dropout,
 	prediction: Linear<B>,
 }
@@ -95,28 +81,19 @@ impl<B: Backend> LaserModel<B> {
 	/// A single forward pass on the model.
 	///
 	/// # Shapes
-	///   - Images \[`batch_size`, channels, height, width\]
-	///   - Output \[`batch_size`, 1\]
+	///   - Images `[batch_size, channels, height, width]`
+	///   - Output `[batch_size, 1]`
 	pub fn forward(
 		&self,
-		images: Tensor<B, 4>,
+		input: Tensor<B, 4>,
 	) -> Tensor<B, 2> {
-		let [batch_size, channels, _, _] = images.dims();
+		let [_, channels, ..] = input.dims();
 		debug_assert_eq!(channels, 3, "expected an RGB tensor");
 
-		let x = images;
-		let x = self.read_head.forward(x); // [batch_size, 16, 640, 480]
-		let x = self.read_head_norm.forward(x);
-		let x = relu(x);
-		let x = self.read_head_pool.forward(x); // [batch_size, 16, 160, 120]
-		let x = self.detail_extraction.forward(x); // [batch_size, 8, 160, 120]
-		let x = self.detail_extraction_norm.forward(x);
-		let x = relu(x);
-		let x = self.detail_extraction_pool.forward(x); // [batch_size, 8, 40, 30]
-		// These two layers function as the `GlobalAveragePooling2D` layer and
-		// drop the shape to two dimensions.
-		let x = self.avg_pool.forward(x); // [batch_size, 8, 1, 1]
-		let x = x.reshape([batch_size, 8]); // [batch_size, 8]
+		let x = input; // [batch_size, 3, 640, 480]
+		let x = self.read_head.forward(x); // [batch_size, 16, 160, 120]
+		let x = self.detail_extraction.forward(x); // [batch_size, 8, 40, 30]
+		let x = self.global_avg_pool.forward(x); // [batch_size, 8]
 		let x = self.dropout.forward(x);
 		self.prediction.forward(x) // [batch_size, 1]
 	}
@@ -126,14 +103,14 @@ impl<B: Backend> LaserModel<B> {
 		batch: LaserBatch<B>,
 	) -> RegressionOutput<B> {
 		let targets: Tensor<B, 2> = batch.targets.unsqueeze_dim(1);
-		let output = self.forward(batch.images);
+		let logits = self.forward(batch.images);
 		let loss = MseLoss::new().forward(
-			output.clone(),
+			logits.clone(),
 			targets.clone(),
 			Reduction::Auto,
 		);
 
-		RegressionOutput::new(loss, output, targets)
+		RegressionOutput::new(loss, logits, targets)
 	}
 }
 
