@@ -26,9 +26,10 @@ use super::{
 };
 use crate::data::LoadedLaserItem;
 
-const IMG_CHANNELS: usize = 3;
-const IMG_HEIGHT: usize = 480;
-const IMG_WIDTH: usize = 640;
+// const IMG_CHANNELS: u32 = 3;
+const IMG_HEIGHT: u32 = 480;
+const IMG_WIDTH: u32 = 640;
+const IMG_PIXELS: usize = (IMG_HEIGHT * IMG_WIDTH) as usize;
 
 #[derive(Clone, Debug)]
 pub struct LaserBatch<B>
@@ -69,7 +70,7 @@ impl<P> AugmentedLaserBatcher<P>
 where
 	P: ImageStep,
 {
-	/// Create a batcher with anaugmentation pipeline defined at compile time.
+	/// Create a batcher with an augmentation pipeline defined at compile time.
 	pub fn new(
 		augmentation: P,
 		seed: u64,
@@ -113,26 +114,12 @@ where
 {
 	let targets = items
 		.iter()
-		.map(|item| {
-			Tensor::<B, 1>::from_data(
-				[item.intensity.into().elem::<B::FloatElem>()],
-				device,
-			)
-		})
+		.map(|item| Tensor::<B, 1>::from_data([item.intensity.into()], device))
 		.collect();
-
-	let images = items
-		.into_iter()
-		.map(|item| {
-			let image = modify_image(item.image);
-			channel_last_to_channel_first(image)
-		})
-		.map(|data| Tensor::<B, 3>::from_data(data, device))
-		.map(|tensor| tensor.unsqueeze_dim(0))
-		.collect();
-
-	let images = Tensor::cat(images, 0);
 	let targets = Tensor::cat(targets, 0);
+
+	let images = items.into_iter().map(|item| modify_image(item.image));
+	let images = images_to_tensor(images, device);
 
 	LaserBatch {
 		images,
@@ -143,32 +130,96 @@ where
 /// Convert from channel-last RGB to channel-first RGB.
 ///
 /// Convolution layers are channel-first.
-#[expect(
-	clippy::needless_pass_by_value,
-	reason = "This is a consuming function"
-)]
-fn channel_last_to_channel_first(image: ImageType) -> TensorData {
-	debug_assert_eq!(
-		image.width() as usize * image.height() as usize,
-		IMG_HEIGHT * IMG_WIDTH,
-		"mapped image dimensions must match the model input dimensions",
-	);
-	let pixel_count = IMG_HEIGHT * IMG_WIDTH;
-	let (mut red_channel, mut green_channel, mut blue_channel) = (
-		Vec::with_capacity(pixel_count),
-		Vec::with_capacity(pixel_count),
-		Vec::with_capacity(pixel_count),
-	);
-	for pixel in image.pixels() {
-		let [red, green, blue] = pixel.0;
-		red_channel.push(red);
-		green_channel.push(green);
-		blue_channel.push(blue);
+fn images_to_tensor<B, I>(
+	images: I,
+	device: &B::Device,
+) -> Tensor<B, 4>
+where
+	B: Backend,
+	I: ExactSizeIterator<Item = ImageType>,
+{
+	let batch_size = images.len();
+	let image_size = IMG_PIXELS * 3;
+	let mut values = vec![0; batch_size * image_size];
+
+	for (image_values, image) in values.chunks_exact_mut(image_size).zip(images)
+	{
+		debug_assert_eq!(
+			image.dimensions(),
+			(IMG_WIDTH, IMG_HEIGHT),
+			"The image did not have the correct dimensions"
+		);
+
+		let (red_values, other_channels) =
+			image_values.split_at_mut(IMG_PIXELS);
+		let (green_values, blue_values) =
+			other_channels.split_at_mut(IMG_PIXELS);
+		for (((red_slot, green_slot), blue_slot), pixel) in red_values
+			.iter_mut()
+			.zip(green_values)
+			.zip(blue_values)
+			.zip(image.pixels())
+		{
+			let image::Rgb([red, green, blue]) = *pixel;
+			*red_slot = red;
+			*green_slot = green;
+			*blue_slot = blue;
+		}
 	}
-	let pixels = red_channel
-		.into_iter()
-		.chain(green_channel)
-		.chain(blue_channel)
-		.collect();
-	TensorData::new(pixels, [IMG_CHANNELS, IMG_HEIGHT, IMG_WIDTH])
+
+	let data = TensorData::new(
+		values,
+		[batch_size, 3, IMG_HEIGHT as usize, IMG_WIDTH as usize],
+	);
+	Tensor::from_data(data, device)
+}
+
+#[cfg(test)]
+mod tests {
+	use burn_flex::{
+		Flex,
+		FlexDevice,
+	};
+
+	use super::*;
+	const IMG_CHANNELS: u32 = 3;
+
+	#[test]
+	fn image_batch_tensor_is_nchw_and_keeps_images_separate() {
+		let images = [
+			ImageType::from_pixel(
+				IMG_WIDTH,
+				IMG_HEIGHT,
+				image::Rgb([10, 20, 30]),
+			),
+			ImageType::from_pixel(
+				IMG_WIDTH,
+				IMG_HEIGHT,
+				image::Rgb([40, 50, 60]),
+			),
+		];
+		let device = FlexDevice::default();
+		let tensor = images_to_tensor::<Flex, _>(images.into_iter(), &device);
+		let dimensions = tensor.dims();
+		let values = tensor
+			.into_data()
+			.to_vec::<f32>()
+			.expect("tensor values should be readable");
+
+		assert_eq!(
+			dimensions,
+			[
+				2,
+				IMG_CHANNELS as usize,
+				IMG_HEIGHT as usize,
+				IMG_WIDTH as usize
+			]
+		);
+		assert_eq!(values.first(), Some(&10.0));
+		assert_eq!(values.get(IMG_PIXELS), Some(&20.0));
+		assert_eq!(values.get(2 * IMG_PIXELS), Some(&30.0));
+		assert_eq!(values.get(3 * IMG_PIXELS), Some(&40.0));
+		assert_eq!(values.get(4 * IMG_PIXELS), Some(&50.0));
+		assert_eq!(values.get(5 * IMG_PIXELS), Some(&60.0));
+	}
 }
