@@ -17,8 +17,7 @@ use burn::{
 		Cuda,
 		cuda::CudaDevice,
 	},
-	data::dataset::Dataset,
-	tensor::Element,
+	prelude::Backend,
 };
 use clap::{
 	Args,
@@ -26,11 +25,7 @@ use clap::{
 };
 
 use super::DatasetChoice;
-use crate::data::{
-	self,
-	IntensityValType,
-	LoadedLaserItem,
-};
+use crate::data::LoadedDataset;
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum EvaluationSplit {
@@ -94,37 +89,27 @@ pub(super) struct Arguments {
 }
 
 pub(super) fn run(arguments: &Arguments) -> Result<(), Box<dyn Error>> {
+	type InferBackend = Cuda;
 	let device = CudaDevice::default();
-	match arguments.dataset {
-		DatasetChoice::Analogous => {
-			let (_, validate, test) = data::analogous_laser_splits();
-			run_split(arguments, "analogous", &validate, &test, &device)
-		},
-		DatasetChoice::Synthetic1 => {
-			let (_, validate, test) = data::synthetic1_splits();
-			run_split(arguments, "synthetic1", &validate, &test, &device)
-		},
-		DatasetChoice::Synthetic2 => {
-			let (_, validate, test) = data::synthetic2_splits();
-			run_split(arguments, "synthetic2", &validate, &test, &device)
-		},
-		DatasetChoice::InLabSingle => {
-			let (_, validate, test) = data::in_lab_single_laser_splits();
-			run_split(arguments, "in-lab-single", &validate, &test, &device)
-		},
-	}
+	let splits = arguments.dataset.source().load_splits::<InferBackend>();
+	run_split::<InferBackend>(
+		arguments,
+		arguments.dataset.name(),
+		&splits.validation,
+		&splits.test,
+		&device,
+	)
 }
 
-fn run_split<T, D>(
+fn run_split<B>(
 	arguments: &Arguments,
 	dataset_name: &str,
-	validation_split: &D,
-	test_split: &D,
-	device: &CudaDevice,
+	validation_split: &LoadedDataset<B>,
+	test_split: &LoadedDataset<B>,
+	device: &B::Device,
 ) -> Result<(), Box<dyn Error>>
 where
-	T: Element + Into<IntensityValType>,
-	D: Dataset<LoadedLaserItem<T>>,
+	B: Backend,
 {
 	if arguments.evaluate_all {
 		let (split_name, dataset) = match arguments.evaluation_split {
@@ -137,7 +122,7 @@ where
 				"--report-dir is required with --evaluate-all",
 			)
 		})?;
-		evaluate::evaluate_all::<Cuda, T, D>(
+		evaluate::evaluate_all::<B, _>(
 			&arguments.model_dir,
 			arguments.evaluation_batch_size,
 			dataset_name,
@@ -147,7 +132,7 @@ where
 			device,
 		)
 	} else {
-		evaluate::infer_samples::<Cuda, T, D>(
+		evaluate::infer_samples::<B, _>(
 			&arguments.model_dir,
 			arguments.num_samples.get(),
 			test_split,

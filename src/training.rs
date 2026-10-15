@@ -12,7 +12,7 @@ use std::{
 use burn::{
 	data::{
 		dataloader::DataLoaderBuilder,
-		dataset::Dataset,
+		dataset::Dataset as _,
 	},
 	optim::AdamConfig,
 	prelude::*,
@@ -20,10 +20,7 @@ use burn::{
 		FullPrecisionSettings,
 		NamedMpkGzFileRecorder,
 	},
-	tensor::{
-		Element,
-		backend::AutodiffBackend,
-	},
+	tensor::backend::AutodiffBackend,
 	train::{
 		Learner,
 		MetricEarlyStoppingStrategy,
@@ -45,9 +42,8 @@ use burn::{
 use crate::{
 	data::{
 		AugmentedLaserBatcher,
+		DatasetSplits,
 		ImageStep,
-		IntensityValType,
-		LoadedLaserItem,
 	},
 	learning_rate::InverseTimeDecayLrScheduler,
 	model::LaserModelConfig,
@@ -143,25 +139,17 @@ fn steps_per_epoch(
 ///
 /// - If the config could not be saved.
 /// - If the model could not be exported.
-#[expect(
-	clippy::too_many_arguments,
-	reason = "These are the things that are needed to start training"
-)]
-pub fn train<B, D, T, AT, AV>(
+#[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
+pub fn train<B>(
 	artefact_dir: &str,
 	config: &TrainingConfig,
 	device: &B::Device,
-	train_split: D,
-	val_split: D,
-	train_augmentation: AT,
-	valid_augmentation: AV,
+	splits: DatasetSplits<impl Backend<FloatElem = B::FloatElem>>,
+	train_augmentation: impl ImageStep + 'static,
+	valid_augmentation: impl ImageStep + 'static,
 	resume: Option<(&str, usize)>,
 ) where
 	B: AutodiffBackend,
-	D: Dataset<LoadedLaserItem<T>> + 'static,
-	T: Element + Into<IntensityValType> + 'static,
-	AT: ImageStep + 'static,
-	AV: ImageStep + 'static,
 {
 	create_artefact_dir(artefact_dir);
 	if let Some((resume_dir, _)) = resume {
@@ -172,6 +160,9 @@ pub fn train<B, D, T, AT, AV>(
 		.expect("Config should be saved successfully");
 
 	B::seed(device, config.seed);
+
+	let train_split = splits.training;
+	let val_split = splits.validation;
 
 	let train_steps_per_epoch =
 		steps_per_epoch(train_split.len(), config.batch_size);

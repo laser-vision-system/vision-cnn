@@ -7,7 +7,10 @@ use std::{
 	io::Write,
 };
 
-use burn::tensor::Element;
+use burn::tensor::{
+	Element,
+	ElementConversion,
+};
 use serde::Serialize;
 
 use crate::inference::result::SampleInference;
@@ -112,14 +115,14 @@ impl EvaluationReport {
 	where
 		D: Into<String>,
 		S: Into<String>,
-		T: Element + Into<f32>,
+		T: Element + ElementConversion,
 	{
 		let samples = results
 			.iter()
 			.enumerate()
 			.map(|(sample_index, result)| {
-				let expected = result.expected_intensity.into();
-				let predicted = result.predicted_intensity.into();
+				let expected = result.expected_intensity.elem::<f32>();
+				let predicted = result.predicted_intensity.elem::<f32>();
 				let residual = predicted - expected;
 				EvaluationSample {
 					sample_index,

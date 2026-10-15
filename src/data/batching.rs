@@ -10,7 +10,6 @@ use std::{
 use burn::{
 	data::dataloader::batcher::Batcher,
 	prelude::*,
-	tensor::Element,
 };
 use dataset_loader::item::ImageType;
 use rand::{
@@ -20,9 +19,8 @@ use rand::{
 
 use super::{
 	ImageStep,
-	IntensityValType,
+	LoadedLaserItem,
 };
-use crate::data::LoadedLaserItem;
 
 // const IMG_CHANNELS: u32 = 3;
 const IMG_HEIGHT: u32 = 480;
@@ -41,14 +39,15 @@ where
 #[derive(Clone, Copy, Debug, Default)]
 pub struct LaserBatcher;
 
-impl<B, T> Batcher<B, LoadedLaserItem<T>, LaserBatch<B>> for LaserBatcher
+// Has two different backend generics because of autodiff.
+impl<B, M> Batcher<B, LoadedLaserItem<M>, LaserBatch<B>> for LaserBatcher
 where
 	B: Backend,
-	T: Element + Into<IntensityValType>,
+	M: Backend<FloatElem = B::FloatElem>,
 {
 	fn batch(
 		&self,
-		items: Vec<LoadedLaserItem<T>>,
+		items: Vec<LoadedLaserItem<M>>,
 		device: &Device<B>,
 	) -> LaserBatch<B> {
 		batch_items(items, device, identity)
@@ -80,16 +79,17 @@ where
 	}
 }
 
-impl<B, T, P> Batcher<B, LoadedLaserItem<T>, LaserBatch<B>>
+// Has two different backend generics because of autodiff.
+impl<B, M, P> Batcher<B, LoadedLaserItem<M>, LaserBatch<B>>
 	for AugmentedLaserBatcher<P>
 where
 	B: Backend,
-	T: Element + Into<IntensityValType>,
+	M: Backend<FloatElem = B::FloatElem>,
 	P: ImageStep,
 {
 	fn batch(
 		&self,
-		items: Vec<LoadedLaserItem<T>>,
+		items: Vec<LoadedLaserItem<M>>,
 		device: &Device<B>,
 	) -> LaserBatch<B> {
 		batch_items(items, device, |image| {
@@ -100,19 +100,20 @@ where
 	}
 }
 
-fn batch_items<B, T, F>(
-	items: Vec<LoadedLaserItem<T>>,
+// Has two different backend generics because of autodiff.
+fn batch_items<B, M, F>(
+	items: Vec<LoadedLaserItem<M>>,
 	device: &Device<B>,
 	mut modify_image: F,
 ) -> LaserBatch<B>
 where
 	B: Backend,
-	T: Element + Into<IntensityValType>,
+	M: Backend<FloatElem = B::FloatElem>,
 	F: FnMut(ImageType) -> ImageType,
 {
 	let targets = items
 		.iter()
-		.map(|item| Tensor::<B, 1>::from_data([item.intensity.into()], device))
+		.map(|item| Tensor::<B, 1>::from_data([item.intensity], device))
 		.collect();
 	let targets = Tensor::cat(targets, 0);
 
@@ -196,7 +197,7 @@ mod tests {
 				image::Rgb([40, 50, 60]),
 			),
 		];
-		let device = FlexDevice::default();
+		let device = FlexDevice;
 		let tensor = images_to_tensor::<Flex, _>(images.into_iter(), &device);
 		let dimensions = tensor.dims();
 		let values = tensor

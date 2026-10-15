@@ -23,14 +23,14 @@ use std::{
 use burn::{
 	data::dataset::Dataset,
 	prelude::Backend,
-	tensor::Element,
+	tensor::{
+		Element,
+		ElementConversion as _,
+	},
 };
 
 use crate::{
-	data::{
-		IntensityValType,
-		LoadedLaserItem,
-	},
+	data::LoadedLaserItem,
 	evaluation::{
 		EvaluationReport,
 		RegressionMetrics,
@@ -39,7 +39,7 @@ use crate::{
 	inference,
 };
 
-pub(super) fn infer_samples<B, T, D>(
+pub(super) fn infer_samples<B, D>(
 	model_dir: &Path,
 	num_samples: usize,
 	dataset: &D,
@@ -47,19 +47,18 @@ pub(super) fn infer_samples<B, T, D>(
 ) -> Result<(), Box<dyn Error>>
 where
 	B: Backend,
-	T: Element + Into<IntensityValType>,
-	D: Dataset<LoadedLaserItem<T>>,
+	D: Dataset<LoadedLaserItem<B>>,
 {
 	let model_dir = model_dir.to_str().ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "model path is not UTF-8")
 	})?;
 	let items: Vec<_> = dataset.iter().take(num_samples).collect();
-	let results = inference::infer::<B, T>(model_dir, device, items);
+	let results = inference::infer::<B>(model_dir, device, items);
 	print_results(&results);
 	Ok(())
 }
 
-pub(super) fn evaluate_all<B, T, D>(
+pub(super) fn evaluate_all<B, D>(
 	model_dir: &Path,
 	batch_size: NonZeroUsize,
 	dataset_name: &str,
@@ -70,19 +69,18 @@ pub(super) fn evaluate_all<B, T, D>(
 ) -> Result<(), Box<dyn Error>>
 where
 	B: Backend,
-	T: Element + Into<IntensityValType>,
-	D: Dataset<LoadedLaserItem<T>>,
+	D: Dataset<LoadedLaserItem<B>>,
 {
 	let model_dir = model_dir.to_str().ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "model path is not UTF-8")
 	})?;
-	let results = inference::infer_dataset::<B, T, D>(
+	let results = inference::infer_dataset::<B, D>(
 		model_dir, device, dataset, batch_size,
 	)?;
 	let metrics = regression_metrics(results.0.iter().map(|sample| {
 		(
-			f64::from(sample.expected_intensity),
-			f64::from(sample.predicted_intensity),
+			sample.expected_intensity.elem::<f64>(),
+			sample.predicted_intensity.elem::<f64>(),
 		)
 	}))?;
 	let report =

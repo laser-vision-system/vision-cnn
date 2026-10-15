@@ -26,7 +26,6 @@ use result::{
 
 use crate::{
 	data::{
-		IntensityValType,
 		LaserBatch,
 		LaserBatcher,
 		LoadedLaserItem,
@@ -43,16 +42,15 @@ struct SampleMetadata<T> {
 	source_fields: Vec<(&'static str, String)>,
 }
 
-pub fn infer<B, T>(
+pub fn infer<B>(
 	artefact_dir: &str,
 	device: &B::Device,
-	items: Vec<LoadedLaserItem<T>>,
-) -> InferenceResults<T>
+	items: Vec<LoadedLaserItem<B>>,
+) -> InferenceResults<B::FloatElem>
 where
 	B: Backend,
-	T: Element + Into<IntensityValType>,
 {
-	let model = load_model::<B>(artefact_dir, device);
+	let model = load_model(artefact_dir, device);
 	let metadata = collect_metadata(&items);
 	let batch = create_batch(items, device);
 	let predictions = predict(&model, batch);
@@ -64,18 +62,17 @@ where
 /// # Errors
 ///
 /// Returns an error if a dataset entry is unexpectedly unavailable.
-pub fn infer_dataset<B, T, D>(
+pub fn infer_dataset<B, D>(
 	artefact_dir: &str,
 	device: &B::Device,
 	dataset: &D,
 	batch_size: NonZeroUsize,
-) -> Result<InferenceResults<IntensityValType>, IoError>
+) -> Result<InferenceResults<B::FloatElem>, IoError>
 where
 	B: Backend,
-	T: Element + Into<IntensityValType>,
-	D: Dataset<LoadedLaserItem<T>>,
+	D: Dataset<LoadedLaserItem<B>>,
 {
-	let model = load_model::<B>(artefact_dir, device);
+	let model = load_model(artefact_dir, device);
 	let dataset_len = dataset.len();
 	let mut samples = Vec::with_capacity(dataset_len);
 
@@ -91,9 +88,8 @@ where
 				})
 			})
 			.collect::<Result<Vec<_>, _>>()?;
-		let metadata = collect_evaluation_metadata(&items);
-		let predictions =
-			predict::<B, IntensityValType>(&model, create_batch(items, device));
+		let metadata = collect_metadata(&items);
+		let predictions = predict(&model, create_batch(items, device));
 		samples.extend(assemble_results(metadata, predictions).0);
 	}
 
@@ -117,10 +113,9 @@ where
 	.expect("Trained model should exist; run train first")
 }
 
-fn collect_metadata<T>(items: &[LoadedLaserItem<T>]) -> Vec<SampleMetadata<T>>
-where
-	T: Element,
-{
+fn collect_metadata<B>(
+	items: &[LoadedLaserItem<B>]
+) -> Vec<SampleMetadata<B::FloatElem>> where B: Backend {
 	items
 		.iter()
 		.map(|item| {
@@ -134,51 +129,25 @@ where
 		.collect()
 }
 
-// NOTE: This function is basically the same as the above, but less generic.
-//   Can they be combined?
-fn collect_evaluation_metadata<T>(
-	items: &[LoadedLaserItem<T>]
-) -> Vec<SampleMetadata<IntensityValType>>
-where
-	T: Element + Into<IntensityValType>,
-{
-	items
-		.iter()
-		.map(|item| {
-			SampleMetadata {
-				image_path: item.image_path.clone(),
-				expected_intensity: item.intensity.into(),
-				position: item.position.clone(),
-				source_fields: item.source_fields.clone(),
-			}
-		})
-		.collect()
-}
-
-fn create_batch<B, T>(
-	items: Vec<LoadedLaserItem<T>>,
+fn create_batch<B>(
+	items: Vec<LoadedLaserItem<B>>,
 	device: &B::Device,
-) -> LaserBatch<B>
-where
-	B: Backend,
-	T: Element + Into<IntensityValType>,
-{
+) -> LaserBatch<B> where B: Backend {
 	LaserBatcher.batch(items, device)
 }
 
-fn predict<B, T>(
+fn predict<B>(
 	model: &LaserModel<B>,
 	batch: LaserBatch<B>,
-) -> Vec<T>
+) -> Vec<B::FloatElem>
 where
 	B: Backend,
-	T: Element + Into<IntensityValType>,
 {
 	model
 		.forward(batch.images)
 		.flatten::<1>(0_i32, 1_i32)
 		.into_data()
-		.to_vec::<T>()
+		.to_vec::<B::FloatElem>()
 		.expect("model should return one prediction per sample")
 }
 
@@ -207,21 +176,22 @@ where
 
 #[cfg(test)]
 mod tests {
+	use burn_flex::Flex;
 	use image::RgbImage;
 
 	use super::*;
 
 	#[test]
-	fn evaluation_metadata_converts_integer_targets_without_rounding() {
-		let items = [LoadedLaserItem {
+	fn evaluation_metadata_preserves_mapped_float_targets() {
+		let items = [LoadedLaserItem::<Flex> {
 			image: RgbImage::new(1, 1),
 			image_path: "dummy/sample.png".to_owned(),
-			intensity: 7_u8,
+			intensity: 7.0,
 			position: Some("sample-a".to_owned()),
 			source_fields: vec![("source", "dummy".to_owned())],
 		}];
 
-		let metadata = collect_evaluation_metadata(&items);
+		let metadata = collect_metadata(&items);
 
 		assert_eq!(metadata.len(), 1);
 		assert!(metadata.first().is_some_and(|sample| {

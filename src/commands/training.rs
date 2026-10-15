@@ -15,14 +15,10 @@ use std::{
 	},
 };
 
-use burn::{
-	backend::{
-		Autodiff,
-		Cuda,
-		cuda::CudaDevice,
-	},
-	data::dataset::Dataset,
-	tensor::Element,
+use burn::backend::{
+	Autodiff,
+	Cuda,
+	cuda::CudaDevice,
 };
 use clap::Args;
 
@@ -82,42 +78,19 @@ pub(super) fn run(arguments: &Arguments) -> Result<(), Box<dyn Error>> {
 		arguments.resume_dir.as_deref(),
 		arguments.force,
 	)?;
-	match arguments.dataset {
-		DatasetChoice::Analogous => {
-			let (train_split, val_split) =
-				data::analogous_laser_train_val_splits();
-			run_training(&arguments.output_dir, &plan, train_split, val_split)
-		},
-		DatasetChoice::Synthetic1 => {
-			let (train_split, val_split) = data::synthetic1_train_val_splits();
-			run_training(&arguments.output_dir, &plan, train_split, val_split)
-		},
-		DatasetChoice::Synthetic2 => {
-			let (train_split, val_split) = data::synthetic2_train_val_splits();
-			run_training(&arguments.output_dir, &plan, train_split, val_split)
-		},
-		DatasetChoice::InLabSingle => {
-			let (train_split, val_split) =
-				data::in_lab_single_laser_train_val_splits();
-			run_training(&arguments.output_dir, &plan, train_split, val_split)
-		},
-	}
+	run_training(&arguments.output_dir, &plan, arguments.dataset.source())
 }
 
 #[expect(clippy::expect_used, reason = "This should be a static assertion")]
-fn run_training<T, D>(
+fn run_training(
 	output_dir: &Path,
 	plan: &plan::TrainingPlan,
-	train_split: D,
-	val_split: D,
-) -> Result<(), Box<dyn Error>>
-where
-	T: Element + Into<data::IntensityValType> + 'static,
-	D: Dataset<data::LoadedLaserItem<T>> + 'static,
-{
+	source: data::DatasetSource,
+) -> Result<(), Box<dyn Error>> {
 	type TrainBackend = Cuda;
 	type TrainAutodiffBackend = Autodiff<TrainBackend>;
 	let device = CudaDevice::default();
+	let splits = source.load_splits::<TrainBackend>();
 
 	let output_dir = output_dir.to_str().ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "output path is not UTF-8")
@@ -130,12 +103,11 @@ where
 		.clone()
 		.then(HueRotate::new(-180, 180).expect("Should be valid range"));
 
-	training::train::<TrainAutodiffBackend, D, T, _, _>(
+	training::train::<TrainAutodiffBackend>(
 		output_dir,
 		plan.config(),
 		&device,
-		train_split,
-		val_split,
+		splits,
 		train_pipeline,
 		NoOp,
 		plan.resume(),
