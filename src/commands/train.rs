@@ -21,22 +21,24 @@ use burn::backend::{
 	cuda::CudaDevice,
 };
 use clap::Args;
+use dataset_loader::augmentation::{
+	ImageStep as _,
+	NoOp,
+	Sequence,
+	flip::{
+		FlipProbability,
+		RandomHorizontalFlip,
+		RandomVerticalFlip,
+	},
+	hue::{
+		HueRange,
+		HueRotate,
+	},
+};
 
 use super::DatasetChoice;
 use crate::{
-	data::{
-		self,
-		ImageStep as _,
-		NoOp,
-		augmentation::{
-			Sequence,
-			flip::{
-				RandomHorizontalFlip,
-				RandomVerticalFlip,
-			},
-			hue::HueRotate,
-		},
-	},
+	data,
 	training,
 };
 
@@ -81,7 +83,6 @@ pub(super) fn run(arguments: &Arguments) -> Result<(), Box<dyn Error>> {
 	run_training(&arguments.output_dir, &plan, arguments.dataset.source())
 }
 
-#[expect(clippy::expect_used, reason = "This should be a static assertion")]
 fn run_training(
 	output_dir: &Path,
 	plan: &plan::TrainingPlan,
@@ -96,12 +97,11 @@ fn run_training(
 		IoError::new(ErrorKind::InvalidInput, "output path is not UTF-8")
 	})?;
 
-	let pipeline = random_flip_augmentation_pipeline()
-		.expect("The augmentation pipeline should use valid values");
+	let pipeline = random_flip_augmentation_pipeline();
 
 	let train_pipeline = pipeline
 		.clone()
-		.then(HueRotate::new(-180, 180).expect("Should be valid range"));
+		.then(HueRotate::new(HueRange::relaxed(-180, 180)));
 
 	training::train::<TrainAutodiffBackend>(
 		output_dir,
@@ -116,8 +116,11 @@ fn run_training(
 }
 
 fn random_flip_augmentation_pipeline()
--> Option<Sequence<RandomHorizontalFlip, RandomVerticalFlip>> {
-	let pipeline =
-		RandomHorizontalFlip::new(0.5)?.then(RandomVerticalFlip::new(0.5)?);
-	Some(pipeline)
+-> Sequence<RandomHorizontalFlip, RandomVerticalFlip> {
+	const FLIP_PROBABILITY: FlipProbability = match FlipProbability::new(0.5) {
+		Ok(probability) => probability,
+		Err(_) => panic!("invalid constant flip probability"),
+	};
+	RandomHorizontalFlip::new(FLIP_PROBABILITY)
+		.then(RandomVerticalFlip::new(FLIP_PROBABILITY))
 }

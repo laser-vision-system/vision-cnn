@@ -38,12 +38,12 @@ use burn::{
 		},
 	},
 };
+use dataset_loader::augmentation::ImageStep;
 
 use crate::{
 	data::{
 		AugmentedLaserBatcher,
 		DatasetSplits,
-		ImageStep,
 	},
 	learning_rate::InverseTimeDecayLrScheduler,
 	model::LaserModelConfig,

@@ -11,16 +11,16 @@ use burn::{
 	data::dataloader::batcher::Batcher,
 	prelude::*,
 };
-use dataset_loader::item::ImageType;
+use dataset_loader::{
+	augmentation::ImageStep,
+	item::ImageType,
+};
 use rand::{
 	SeedableRng as _,
 	rngs::StdRng,
 };
 
-use super::{
-	ImageStep,
-	LoadedLaserItem,
-};
+use super::LoadedLaserItem;
 
 // const IMG_CHANNELS: u32 = 3;
 const IMG_HEIGHT: u32 = 480;
