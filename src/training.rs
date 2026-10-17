@@ -73,36 +73,6 @@ pub struct TrainingConfig {
 	pub early_stopping_patience: usize,
 }
 
-fn create_artefact_dir(artefact_dir: &str) {
-	_ = fs::create_dir_all(artefact_dir);
-}
-
-fn copy_checkpoints(
-	source_dir: &str,
-	output_dir: &str,
-) {
-	let source = Path::new(source_dir).join("checkpoint");
-	let destination = Path::new(output_dir).join("checkpoint");
-	fs::create_dir_all(&destination)
-		.expect("output checkpoint directory should be created");
-	for entry in
-		fs::read_dir(source).expect("resume checkpoint directory should exist")
-	{
-		let entry = entry.expect("checkpoint entry should be readable");
-		let file_type = entry
-			.file_type()
-			.expect("checkpoint file type should be readable");
-		#[expect(
-			clippy::filetype_is_file,
-			reason = "Checkpoint records must be copied only when they are regular files"
-		)]
-		if file_type.is_file() {
-			fs::copy(entry.path(), destination.join(entry.file_name()))
-				.expect("resume checkpoint should be copied to output");
-		}
-	}
-}
-
 /// Find the latest model checkpoint epoch in an artifact directory.
 pub fn latest_checkpoint_epoch(artefact_dir: &str) -> Option<usize> {
 	fs::read_dir(Path::new(artefact_dir).join("checkpoint"))
@@ -116,21 +86,6 @@ pub fn latest_checkpoint_epoch(artefact_dir: &str) -> Option<usize> {
 			epoch.parse().ok()
 		})
 		.max()
-}
-
-#[expect(clippy::integer_division, reason = "Accounted for")]
-fn steps_per_epoch(
-	dataset_len: usize,
-	batch_size: usize,
-) -> usize {
-	if dataset_len == 0 || batch_size == 0 {
-		return 1;
-	}
-
-	let full_batches = dataset_len / batch_size;
-	let partial_batch = usize::from(!dataset_len.is_multiple_of(batch_size));
-	let steps = full_batches + partial_batch;
-	if steps == 0 { 1 } else { steps }
 }
 
 /// Execute the training process.
@@ -239,4 +194,49 @@ pub fn train<B>(
 		Path::new(artefact_dir).join("model.bpk"),
 	)
 	.expect("Training model should be exported successfully");
+}
+
+fn create_artefact_dir(artefact_dir: &str) {
+	_ = fs::create_dir_all(artefact_dir);
+}
+
+fn copy_checkpoints(
+	source_dir: &str,
+	output_dir: &str,
+) {
+	let source = Path::new(source_dir).join("checkpoint");
+	let destination = Path::new(output_dir).join("checkpoint");
+	fs::create_dir_all(&destination)
+		.expect("output checkpoint directory should be created");
+	for entry in
+		fs::read_dir(source).expect("resume checkpoint directory should exist")
+	{
+		let entry = entry.expect("checkpoint entry should be readable");
+		let file_type = entry
+			.file_type()
+			.expect("checkpoint file type should be readable");
+		#[expect(
+			clippy::filetype_is_file,
+			reason = "Checkpoint records must be copied only when they are regular files"
+		)]
+		if file_type.is_file() {
+			fs::copy(entry.path(), destination.join(entry.file_name()))
+				.expect("resume checkpoint should be copied to output");
+		}
+	}
+}
+
+#[expect(clippy::integer_division, reason = "Accounted for")]
+fn steps_per_epoch(
+	dataset_len: usize,
+	batch_size: usize,
+) -> usize {
+	if dataset_len == 0 || batch_size == 0 {
+		return 1;
+	}
+
+	let full_batches = dataset_len / batch_size;
+	let partial_batch = usize::from(!dataset_len.is_multiple_of(batch_size));
+	let steps = full_batches + partial_batch;
+	if steps == 0 { 1 } else { steps }
 }
