@@ -1,3 +1,5 @@
+//! Training configuration, checkpoint discovery, and model optimization.
+
 #![expect(clippy::expect_used, reason = "Not a problem")]
 #![expect(
 	clippy::redundant_field_names,
@@ -53,27 +55,41 @@ use crate::{
 /// Configuration for training hyper-parameters.
 #[derive(Config, Debug)]
 pub struct TrainingConfig {
+	/// Model architecture and regularisation configuration.
 	pub model: LaserModelConfig,
+	/// Optimiser configuration.
 	pub optimiser: AdamConfig,
+	/// Maximum number of training epochs.
 	#[config(default = 10)]
 	pub num_epochs: usize,
+	/// Number of samples per training and validation batch.
 	#[config(default = 16)]
 	pub batch_size: usize,
+	/// Number of data-loading workers.
 	#[config(default = 4)]
 	pub num_workers: usize,
+	/// Seed used for backend initialization and data ordering.
 	#[config(default = 42)]
 	pub seed: u64,
+	/// Initial optimizer learning rate.
 	#[config(default = 1e-3)]
 	pub learning_rate: f64,
+	/// Inverse-time learning-rate decay factor.
 	#[config(default = 0.2)]
 	pub decay_rate: f64,
+	/// Steps between learning-rate decay intervals; zero derives this from the
+	/// training split and batch size.
 	#[config(default = 0)]
 	pub decay_steps: usize,
+	/// Number of validation epochs without improvement before stopping.
 	#[config(default = 2)]
 	pub early_stopping_patience: usize,
 }
 
-/// Find the latest model checkpoint epoch in an artifact directory.
+/// Find the greatest checkpoint epoch in an artifact directory.
+///
+/// Returns `None` when the checkpoint directory cannot be read or contains no
+/// filename with a parseable `model-<epoch>` prefix.
 pub fn latest_checkpoint_epoch(artefact_dir: &str) -> Option<usize> {
 	fs::read_dir(Path::new(artefact_dir).join("checkpoint"))
 		.ok()?
@@ -94,6 +110,7 @@ pub fn latest_checkpoint_epoch(artefact_dir: &str) -> Option<usize> {
 ///
 /// - If the config could not be saved.
 /// - If the model could not be exported.
+/// - If a requested resume checkpoint cannot be copied.
 #[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
 pub fn train<B>(
 	artefact_dir: &str,

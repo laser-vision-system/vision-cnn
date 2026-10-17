@@ -23,18 +23,20 @@ use clap::{
 	Args,
 	ValueEnum,
 };
+use vision_cnn::data::LoadedDataset;
 
 use super::DatasetChoice;
-use crate::data::LoadedDataset;
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
+/// Evaluation split accepted by the `infer --evaluate-all` command.
 enum EvaluationSplit {
 	Validate,
 	Test,
 }
 
 #[derive(Args)]
-pub(super) struct Arguments {
+/// Arguments accepted by the `infer` command.
+pub struct Arguments {
 	#[arg(
 		value_name = "MODEL_DIR",
 		help = "Directory containing the trained model and config"
@@ -88,7 +90,7 @@ pub(super) struct Arguments {
 	report_dir: Option<PathBuf>,
 }
 
-pub(super) fn run(arguments: &Arguments) -> Result<(), Box<dyn Error>> {
+pub fn run(arguments: &Arguments) -> Result<(), Box<dyn Error>> {
 	type InferBackend = Cuda;
 	let device = CudaDevice::default();
 	let splits = arguments.dataset.source().load_splits::<InferBackend>();
@@ -101,6 +103,7 @@ pub(super) fn run(arguments: &Arguments) -> Result<(), Box<dyn Error>> {
 	)
 }
 
+/// Execute sample inference or full-split evaluation.
 fn run_split<B>(
 	arguments: &Arguments,
 	dataset_name: &str,

@@ -35,15 +35,16 @@ use dataset_loader::augmentation::{
 		HueRotate,
 	},
 };
-
-use super::DatasetChoice;
-use crate::{
+use vision_cnn::{
 	data,
 	training,
 };
 
+use super::DatasetChoice;
+
 #[derive(Args)]
-pub(super) struct Arguments {
+/// Arguments accepted by the `train` command.
+pub struct Arguments {
 	#[arg(
 		value_name = "OUTPUT_DIR",
 		help = "Directory for the trained model and artifacts"
@@ -73,7 +74,7 @@ pub(super) struct Arguments {
 	force: bool,
 }
 
-pub(super) fn run(arguments: &Arguments) -> Result<(), Box<dyn Error>> {
+pub fn run(arguments: &Arguments) -> Result<(), Box<dyn Error>> {
 	let plan = plan::load(arguments.resume_dir.as_deref())?;
 	output::prepare(
 		&arguments.output_dir,
@@ -83,6 +84,7 @@ pub(super) fn run(arguments: &Arguments) -> Result<(), Box<dyn Error>> {
 	run_training(&arguments.output_dir, &plan, arguments.dataset.source())
 }
 
+/// Run training using the selected artifact directory and dataset source.
 fn run_training(
 	output_dir: &Path,
 	plan: &plan::TrainingPlan,
@@ -115,6 +117,7 @@ fn run_training(
 	Ok(())
 }
 
+/// Compose the random image-flip augmentations used during training.
 fn random_flip_augmentation_pipeline()
 -> Sequence<RandomHorizontalFlip, RandomVerticalFlip> {
 	const FLIP_PROBABILITY: FlipProbability = match FlipProbability::new(0.5) {

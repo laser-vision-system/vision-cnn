@@ -1,3 +1,6 @@
+//! Reusable data, model, training, inference, and evaluation APIs for laser
+//! intensity prediction.
+
 #![cfg_attr(
 	test,
 	allow(
@@ -13,7 +16,6 @@
 	)
 )]
 
-pub mod commands;
 pub mod data;
 pub mod evaluation;
 pub mod inference;

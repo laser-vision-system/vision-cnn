@@ -1,3 +1,5 @@
+//! CLI adapters for inference output and evaluation reports.
+
 #![expect(
 	clippy::print_stdout,
 	reason = "Evaluation reports its results in the terminal"
@@ -28,8 +30,7 @@ use burn::{
 		ElementConversion as _,
 	},
 };
-
-use crate::{
+use vision_cnn::{
 	data::LoadedLaserItem,
 	evaluation::{
 		EvaluationReport,
@@ -39,7 +40,7 @@ use crate::{
 	inference,
 };
 
-pub(super) fn infer_samples<B, D>(
+pub fn infer_samples<B, D>(
 	model_dir: &Path,
 	num_samples: usize,
 	dataset: &D,
@@ -58,7 +59,7 @@ where
 	Ok(())
 }
 
-pub(super) fn evaluate_all<B, D>(
+pub fn evaluate_all<B, D>(
 	model_dir: &Path,
 	batch_size: NonZeroUsize,
 	dataset_name: &str,
@@ -154,11 +155,12 @@ mod tests {
 		},
 	};
 
-	use super::*;
-	use crate::{
+	use vision_cnn::{
 		evaluation::regression_metrics,
 		inference::result::SampleInference,
 	};
+
+	use super::*;
 
 	static NEXT_TEMP_DIR: AtomicUsize = AtomicUsize::new(0);
 

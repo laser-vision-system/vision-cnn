@@ -1,3 +1,5 @@
+//! Prepare a CLI training output directory without damaging resume data.
+
 use std::{
 	error::Error,
 	fs,
@@ -11,7 +13,13 @@ use std::{
 	},
 };
 
-pub(super) fn prepare(
+/// Validate and create the output directory for a training run.
+///
+/// # Errors
+///
+/// Returns an error when paths overlap, the output exists without `force`, or
+/// the filesystem cannot create or remove the requested directory.
+pub fn prepare(
 	output_dir: &Path,
 	resume_dir: Option<&Path>,
 	force: bool,

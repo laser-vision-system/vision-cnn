@@ -213,12 +213,23 @@ impl EvaluationReport {
 ///
 /// The 95th percentile uses linear interpolation between adjacent sorted
 /// absolute errors. $R^2$ is undefined when every target has the same value.
-///
+// Note: Latex support is currently an unstable feature: https://github.com/rust-lang/rust/issues/162365
 /// # Errors
 ///
 /// Returns [`RegressionMetricsError::EmptyInput`] when there are no pairs and
 /// [`RegressionMetricsError::NonFiniteValue`] when a pair contains NaN or an
 /// infinite value.
+///
+/// # Examples
+///
+/// ```
+/// use vision_cnn::evaluation::regression_metrics;
+///
+/// let metrics = regression_metrics([(1.0, 1.5), (2.0, 2.5)])?;
+/// assert_eq!(metrics.sample_count, 2);
+/// assert!((metrics.mean_absolute_error - 0.5).abs() < f64::EPSILON);
+/// # Ok::<(), vision_cnn::evaluation::RegressionMetricsError>(())
+/// ```
 #[expect(
 	clippy::cast_precision_loss,
 	reason = "The sample count is bounded by the allocated in-memory evaluation pairs"

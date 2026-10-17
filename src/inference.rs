@@ -1,3 +1,5 @@
+//! Model inference over individual samples or complete datasets.
+
 #![expect(clippy::expect_used, reason = "No need to worry about panic here")]
 
 pub mod result;
@@ -42,6 +44,13 @@ struct SampleMetadata<T> {
 	source_fields: Vec<(&'static str, String)>,
 }
 
+/// Run inference for an in-memory collection of mapped samples.
+///
+/// # Panics
+///
+/// Panics if the artifact directory does not contain a readable model
+/// configuration and model export, or if predictions cannot be converted to
+/// the backend's floating-point element type.
 pub fn infer<B>(
 	artefact_dir: &str,
 	device: &B::Device,
@@ -62,6 +71,12 @@ where
 /// # Errors
 ///
 /// Returns an error if a dataset entry is unexpectedly unavailable.
+///
+/// # Panics
+///
+/// Panics if the artifact directory does not contain a readable model
+/// configuration and model export, or if predictions cannot be converted to
+/// the backend's floating-point element type.
 pub fn infer_dataset<B, D>(
 	artefact_dir: &str,
 	device: &B::Device,
@@ -115,7 +130,10 @@ where
 
 fn collect_metadata<B>(
 	items: &[LoadedLaserItem<B>]
-) -> Vec<SampleMetadata<B::FloatElem>> where B: Backend {
+) -> Vec<SampleMetadata<B::FloatElem>>
+where
+	B: Backend,
+{
 	items
 		.iter()
 		.map(|item| {
@@ -132,7 +150,10 @@ fn collect_metadata<B>(
 fn create_batch<B>(
 	items: Vec<LoadedLaserItem<B>>,
 	device: &B::Device,
-) -> LaserBatch<B> where B: Backend {
+) -> LaserBatch<B>
+where
+	B: Backend,
+{
 	LaserBatcher.batch(items, device)
 }
 

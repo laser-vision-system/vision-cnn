@@ -1,3 +1,5 @@
+//! Build the training configuration and optional resume state for the CLI.
+
 use std::{
 	error::Error,
 	io::{
@@ -11,8 +13,7 @@ use burn::{
 	optim::AdamConfig,
 	prelude::Config as _,
 };
-
-use crate::{
+use vision_cnn::{
 	model::LaserModelConfig,
 	training::{
 		TrainingConfig,
@@ -20,26 +21,32 @@ use crate::{
 	},
 };
 
-pub(super) struct TrainingPlan {
+/// Resolved training configuration and optional checkpoint to resume from.
+pub struct TrainingPlan {
 	config: TrainingConfig,
 	resume: Option<(String, usize)>,
 }
 
 impl TrainingPlan {
-	pub(super) const fn config(&self) -> &TrainingConfig {
+	/// Return the configuration used for this training run.
+	pub const fn config(&self) -> &TrainingConfig {
 		&self.config
 	}
 
-	pub(super) fn resume(&self) -> Option<(&str, usize)> {
+	/// Return the checkpoint source and epoch, when resuming.
+	pub fn resume(&self) -> Option<(&str, usize)> {
 		self.resume
 			.as_ref()
 			.map(|(directory, epoch)| (directory.as_str(), *epoch))
 	}
 }
 
-pub(super) fn load(
-	resume_dir: Option<&Path>
-) -> Result<TrainingPlan, Box<dyn Error>> {
+/// Load a new or resumed training plan.
+///
+/// # Errors
+///
+/// Returns an error when a resume configuration or checkpoint cannot be read.
+pub fn load(resume_dir: Option<&Path>) -> Result<TrainingPlan, Box<dyn Error>> {
 	match resume_dir {
 		Some(directory) => load_resume_plan(directory),
 		None => Ok(new_training_plan()),

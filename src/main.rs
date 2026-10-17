@@ -1,7 +1,9 @@
+//! Command-line entry point for the `vision-cnn` application.
+
 use std::error::Error;
 
-use vision_cnn::commands::run;
+mod commands;
 
 fn main() -> Result<(), Box<dyn Error>> {
-	run()
+	commands::run()
 }
