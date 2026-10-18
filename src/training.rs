@@ -72,7 +72,7 @@ pub struct TrainingConfig {
 	#[config(default = 42)]
 	pub seed: u64,
 	/// Initial optimizer learning rate.
-	#[config(default = 1e-3)]
+	#[config(default = 1e-2)]
 	pub learning_rate: f64,
 	/// Inverse-time learning-rate decay factor.
 	#[config(default = 0.2)]
