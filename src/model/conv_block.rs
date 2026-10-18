@@ -14,31 +14,74 @@ use burn::{
 			Conv2d,
 			Conv2dConfig,
 		},
-		pool::{
-			MaxPool2d,
-			MaxPool2dConfig,
-		},
 	},
 	prelude::*,
-	tensor::activation::relu,
+	tensor::activation::{
+		hard_swish,
+		leaky_relu,
+		relu,
+	},
 };
 
-/// Configuration options for the [`ConvBlock`].
+/// Selection for the activation type of a [`ConvBlock`].
+#[derive(Clone, Copy, Debug, Default, serde::Deserialize, serde::Serialize)]
+pub enum ConvBlockActivation {
+	/// Use the [`relu`] activation function.
+	#[default]
+	Relu,
+	/// Use the [`hard_swish`] activation function.
+	HardSwish,
+	/// Use the [`leaky_relu`] activation function.
+	LeakyRelu(f64),
+}
+
+/// Configuration to create a [`ConvBlock`] with the [init_function].
+///
+/// [init_function]: Self::init
 #[derive(Config, Debug)]
 pub struct ConvBlockConfig {
-	input_channels: usize,
-	output_channels: usize,
+	/// The number of input channels.
+	pub input_channels: usize,
+	/// The number of output channels.
+	pub output_channels: usize,
+	/// The activation function to use for the output.
+	#[config(default = "ConvBlockActivation::Relu")]
+	pub activation: ConvBlockActivation,
+	/// The size of the kernel.
 	#[config(default = 3)]
-	kernel_size: usize,
-	padding: PaddingConfig2d,
+	pub kernel_size: usize,
+	/// The stride of the convolution (squared).
+	#[config(default = 1)]
+	pub stride: usize,
+	/// The number of padding pixels added to the edge.
+	#[config(default = 1)]
+	pub padding: usize,
+	/// Controls the exponential moving average of the mean and variance
+	/// estimates used to update the metrics in batch normalisation.
 	#[config(default = 0.1)]
-	momentum: f64,
-	#[config(default = 4)]
-	pool_kernel_size: usize,
+	pub momentum: f64,
+	// ---
+	// Copied from Conv2dConfig:
+	// ---
+	/// Spacing between kernel elements.
+	#[config(default = "[1, 1]")]
+	pub dilation: [usize; 2],
+	/// Controls the connections between input and output channels.
+	#[config(default = "1")]
+	pub groups: usize,
+	/// If bias should be added to the output.
+	#[config(default = true)]
+	pub bias: bool,
+	// ---
+	// Copied from BatchNormConfig:
+	// ---
+	/// A value required for numerical stability.
+	#[config(default = 1e-5)]
+	pub epsilon: f64,
 }
 
 impl ConvBlockConfig {
-	/// Construct a [`ConvBlock`] with the selected configuration.
+	/// Initialises a new [`ConvBlock`] module.
 	pub fn init<B>(
 		&self,
 		device: &B::Device,
@@ -51,34 +94,56 @@ impl ConvBlockConfig {
 				[self.input_channels, self.output_channels],
 				[self.kernel_size; 2],
 			)
-			.with_padding(self.padding.clone())
+			.with_stride([self.stride; 2])
+			.with_dilation(self.dilation)
+			.with_groups(self.groups)
+			.with_padding(PaddingConfig2d::Explicit(
+				self.padding,
+				self.padding,
+				self.padding,
+				self.padding,
+			))
+			.with_bias(self.bias)
 			.init(device),
 			batch_norm: BatchNormConfig::new(self.output_channels)
+				.with_epsilon(self.epsilon)
 				.with_momentum(self.momentum)
 				.init(device),
-			max_pool: MaxPool2dConfig::new([self.pool_kernel_size; 2]).init(),
+			activation: self.activation,
 		}
 	}
 }
 
-/// A chain of a [`Conv2d`], [`BatchNorm`], and [`MaxPool2d`].
+/// A chain of a [`Conv2d`], [`BatchNorm`], and activation function.
+///
+/// Should be created with [`ConvBlockConfig`].
 #[derive(Module, Debug)]
 pub struct ConvBlock<B: Backend> {
+	// TODO: Look into depthwise convolution.
 	conv: Conv2d<B>,
 	batch_norm: BatchNorm<B>,
-	max_pool: MaxPool2d,
+	activation: ConvBlockActivation,
 }
 
 impl<B: Backend> ConvBlock<B> {
 	/// Runs the forward pass for this layer module.
+	///
+	/// # Shapes
+	///   - Images `[batch_size, channels, height, width]`
+	///   - Output `[batch_size, channels, height, width]`
 	pub fn forward(
 		&self,
 		input: Tensor<B, 4>,
 	) -> Tensor<B, 4> {
 		let x = input;
-		let x = self.conv.forward(x); // [batch_size, c, w, h]
+		let x = self.conv.forward(x);
 		let x = self.batch_norm.forward(x);
-		let x = relu(x);
-		self.max_pool.forward(x) // [batch_size, c, w / pool_kernel_size, h / pool_kernel_size]
+		match self.activation {
+			ConvBlockActivation::Relu => relu(x),
+			ConvBlockActivation::HardSwish => hard_swish(x),
+			ConvBlockActivation::LeakyRelu(neg_slope) => {
+				leaky_relu(x, neg_slope)
+			},
+		}
 	}
 }
