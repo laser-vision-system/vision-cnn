@@ -1,3 +1,5 @@
+//! Provides the [`InverseTimeDecayLrScheduler`] type.
+
 use burn::{
 	optim::lr_scheduler::LrScheduler,
 	tensor::backend::Backend,

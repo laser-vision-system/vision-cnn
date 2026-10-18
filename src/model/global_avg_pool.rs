@@ -1,3 +1,7 @@
+//! Provides the [`GlobalAvgPooling2d`] layer module.
+//!
+//! Functionally similar to the one provided by Keras in Python.
+
 use burn::{
 	module::{
 		Content,

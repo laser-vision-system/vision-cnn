@@ -21,7 +21,10 @@ pub enum RegressionMetricsError {
 	/// Metrics cannot be computed without any samples.
 	EmptyInput,
 	/// A target or prediction was not finite.
-	NonFiniteValue { sample_index: usize },
+	NonFiniteValue {
+		/// The index of the sample.
+		sample_index: usize,
+	},
 }
 
 impl fmt::Display for RegressionMetricsError {

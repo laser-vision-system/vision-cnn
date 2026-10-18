@@ -1,3 +1,5 @@
+//! Types and functions for creating a model and running forward passes on it.
+
 pub mod conv_block;
 pub mod global_avg_pool;
 
@@ -35,8 +37,11 @@ use crate::data::LaserBatch;
 /// Model hyper-parameters for the laser regression CNN.
 #[derive(Config, Debug)]
 pub struct LaserModelConfig {
+	/// The probability of the dropout layer activating.
 	#[config(default = 0.2)]
 	pub dropout: f64,
+	/// Controls the exponential moving average of the mean and variance
+	/// estimates.
 	#[config(default = 0.1)]
 	pub batch_norm_momentum: f64,
 }
@@ -68,6 +73,7 @@ impl LaserModelConfig {
 	}
 }
 
+/// The laser intensity prediction model.
 #[derive(Module, Debug)]
 pub struct LaserModel<B: Backend> {
 	read_head: ConvBlock<B>,
@@ -98,6 +104,7 @@ impl<B: Backend> LaserModel<B> {
 		self.prediction.forward(x) // [batch_size, 1]
 	}
 
+	/// The training/validation forward pass with loss calculation.
 	pub fn forward_step(
 		&self,
 		batch: LaserBatch<B>,

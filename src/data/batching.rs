@@ -1,3 +1,5 @@
+//! Image batching operations for training, validation, and testing.
+
 #![expect(
 	clippy::allow_attributes,
 	reason = "Expect may not be fulfilled with swappable batching functions"
@@ -36,15 +38,19 @@ const IMG_HEIGHT: u32 = 480;
 const IMG_WIDTH: u32 = 640;
 const IMG_PIXELS: usize = (IMG_HEIGHT * IMG_WIDTH) as usize;
 
+/// A collection of input items and labels.
 #[derive(Clone, Debug)]
 pub struct LaserBatch<B>
 where
 	B: Backend,
 {
+	/// The input features.
 	pub images: Tensor<B, 4>,
+	/// The labels.
 	pub targets: Tensor<B, 1>,
 }
 
+/// A unit struct that provides the batching trait implementation.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct LaserBatcher;
 
@@ -63,6 +69,7 @@ where
 	}
 }
 
+/// Provides image augmentation alongside batching operations.
 #[derive(Clone)]
 pub struct AugmentedLaserBatcher<P>
 where

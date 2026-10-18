@@ -1,3 +1,5 @@
+//! A data structure for the results of inference.
+
 use std::fmt::{
 	self,
 	Display,

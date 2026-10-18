@@ -47,9 +47,13 @@ const WEIGHTS: SplitWeights =
 /// A supported dataset source.
 #[derive(Clone, Copy, Debug)]
 pub enum DatasetSource {
+	/// The first synthetic dataset.
 	Synthetic1,
+	/// The second synthetic dataset.
 	Synthetic2,
+	/// The analogous laser dataset.
 	Analogous,
+	/// The in-lab single-laser dataset.
 	InLabSingle,
 }
 

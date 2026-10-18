@@ -1,3 +1,5 @@
+//! Mapping operations to load images from their low-level representations.
+
 #![expect(
 	clippy::expect_used,
 	reason = "Impossible to handle error inside mapper"
@@ -23,10 +25,15 @@ use super::ImageType;
 /// The data-structure used post-mapping.
 #[derive(Debug, Clone)]
 pub struct LoadedLaserItem<B: Backend> {
+	/// The image data.
 	pub image: ImageType,
+	/// The path to the image.
 	pub image_path: String,
+	/// The intensity (label) of the item.
 	pub intensity: B::FloatElem,
+	/// Optional information about the position that the item was capture in.
 	pub position: Option<String>,
+	/// Source-specific details about this item, used for evaluation.
 	pub source_fields: Vec<(&'static str, String)>,
 }
 

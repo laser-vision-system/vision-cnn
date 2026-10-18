@@ -21,4 +21,5 @@ pub use self::{
 	},
 };
 
+/// The image buffer representation that is supported by the current model.
 pub type ImageType = image::GrayImage;

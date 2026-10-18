@@ -53,12 +53,15 @@ burn-flex = { version = "0.21", features = [
 
 [lints.rust]
 unsafe_code = "deny" # We should avoid using unsafe code as much as possible.
+missing_docs = "deny" # Make sure to include documentation.
 
 [lints.rustdoc]
 missing_crate_level_docs = "deny"
 broken_intra_doc_links = "deny"
 
 [lints.clippy]
+
+tabs_in_doc_comments = "allow" # Tabs expected for indentation.
 
 # ===== pedantic group lints ======
 

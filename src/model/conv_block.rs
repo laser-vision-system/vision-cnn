@@ -1,3 +1,5 @@
+//! Custom layer module for convolution layers.
+
 #![expect(
 	clippy::redundant_field_names,
 	reason = "Caused by Burn's `Config` derive"
@@ -21,6 +23,7 @@ use burn::{
 	tensor::activation::relu,
 };
 
+/// Configuration options for the [`ConvBlock`].
 #[derive(Config, Debug)]
 pub struct ConvBlockConfig {
 	input_channels: usize,
@@ -35,6 +38,7 @@ pub struct ConvBlockConfig {
 }
 
 impl ConvBlockConfig {
+	/// Construct a [`ConvBlock`] with the selected configuration.
 	pub fn init<B>(
 		&self,
 		device: &B::Device,
@@ -57,6 +61,7 @@ impl ConvBlockConfig {
 	}
 }
 
+/// A chain of a [`Conv2d`], [`BatchNorm`], and [`MaxPool2d`].
 #[derive(Module, Debug)]
 pub struct ConvBlock<B: Backend> {
 	conv: Conv2d<B>,
@@ -65,6 +70,7 @@ pub struct ConvBlock<B: Backend> {
 }
 
 impl<B: Backend> ConvBlock<B> {
+	/// Runs the forward pass for this layer module.
 	pub fn forward(
 		&self,
 		input: Tensor<B, 4>,
