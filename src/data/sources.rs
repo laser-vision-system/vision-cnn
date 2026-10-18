@@ -2,13 +2,13 @@
 
 #![expect(clippy::expect_used, reason = "Configured datasets must load")]
 
-use std::num::NonZeroU8;
-
 use burn::{
 	data::dataset::Dataset,
 	prelude::Backend,
 };
 use dataset_loader::{
+	PositiveFinite,
+	SplitWeights,
 	Splitable,
 	item::LaserItem as _,
 	sources::{
@@ -25,12 +25,24 @@ use super::{
 	LoadedLaserItem,
 };
 
-const TRAIN_WEIGHT: NonZeroU8 = match NonZeroU8::new(80) {
-	Some(weight) => weight,
-	None => NonZeroU8::MIN,
+const TRAIN_WEIGHT: PositiveFinite = match PositiveFinite::new(80.0) {
+	Ok(weight) => weight,
+	Err(_) => panic!("traning weight is invalid"),
 };
-const VALIDATE_WEIGHT: u8 = 15;
-const TEST_WEIGHT: u8 = 2;
+const VALIDATE_WEIGHT: PositiveFinite = match PositiveFinite::new(15.0) {
+	Ok(weight) => weight,
+	Err(_) => panic!("validation weight is invalid"),
+};
+const TEST_WEIGHT: PositiveFinite = match PositiveFinite::new(2.0) {
+	Ok(weight) => weight,
+	Err(_) => panic!("testing weight is invalid"),
+};
+
+const WEIGHTS: SplitWeights =
+	match SplitWeights::try_new(TRAIN_WEIGHT, VALIDATE_WEIGHT, TEST_WEIGHT) {
+		Some(value) => value,
+		None => panic!("Split weights are invalid"),
+	};
 
 /// A supported dataset source.
 #[derive(Clone, Copy, Debug)]
@@ -48,7 +60,10 @@ impl DatasetSource {
 	///
 	/// Panics if the selected dataset cannot be loaded or either evaluation
 	/// split is unavailable.
-	pub fn load_splits<B>(self) -> DatasetSplits<B> where B: Backend {
+	pub fn load_splits<B>(self) -> DatasetSplits<B>
+	where
+		B: Backend,
+	{
 		match self {
 			Self::Synthetic1 => {
 				split_source(
@@ -115,9 +130,9 @@ where
 	D: Splitable<LoadedLaserItem<B>>,
 	D::Output: Dataset<LoadedLaserItem<B>> + 'static,
 {
-	let splits = dataset.into_split(TRAIN_WEIGHT, VALIDATE_WEIGHT, TEST_WEIGHT);
+	let splits = dataset.into_split(WEIGHTS);
 	DatasetSplits {
-		training: Box::new(splits.train),
+		training: Box::new(splits.train.expect("training split should exist")),
 		validation: Box::new(
 			splits.validate.expect("validation split should exist"),
 		),

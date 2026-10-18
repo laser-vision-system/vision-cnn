@@ -120,10 +120,11 @@ fn run_training(
 /// Compose the random image-flip augmentations used during training.
 fn random_flip_augmentation_pipeline()
 -> Sequence<RandomHorizontalFlip, RandomVerticalFlip> {
-	const FLIP_PROBABILITY: FlipProbability = match FlipProbability::new(0.5) {
-		Ok(probability) => probability,
-		Err(_) => panic!("invalid constant flip probability"),
-	};
+	const FLIP_PROBABILITY: FlipProbability =
+		match FlipProbability::try_new(0.5) {
+			Ok(probability) => probability,
+			Err(_) => panic!("invalid constant flip probability"),
+		};
 	RandomHorizontalFlip::new(FLIP_PROBABILITY)
 		.then(RandomVerticalFlip::new(FLIP_PROBABILITY))
 }
