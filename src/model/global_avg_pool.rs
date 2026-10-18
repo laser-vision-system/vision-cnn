@@ -15,6 +15,8 @@ use burn::{
 /// Global average pooling operation for 2D data.
 ///
 /// Collapses the remaining spatial information into the channels via averaging.
+///
+/// Does not have any configuration options.
 #[derive(Module, Clone, Debug)]
 #[module(custom_display)]
 pub struct GlobalAvgPooling2d;
@@ -37,7 +39,6 @@ impl GlobalAvgPooling2d {
 		B: Backend,
 	{
 		let [batch_size, channels, ..] = input.dims();
-
 		let x = adaptive_avg_pool2d(input, [1, 1]);
 		x.reshape([batch_size, channels])
 	}
