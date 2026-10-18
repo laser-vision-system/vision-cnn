@@ -30,10 +30,10 @@ use dataset_loader::augmentation::{
 		RandomHorizontalFlip,
 		RandomVerticalFlip,
 	},
-	hue::{
-		HueRange,
-		HueRotate,
-	},
+	// hue::{
+	// 	HueRange,
+	// 	HueRotate,
+	//},
 };
 use vision_cnn::{
 	data,
@@ -101,9 +101,10 @@ fn run_training(
 
 	let pipeline = random_flip_augmentation_pipeline();
 
-	let train_pipeline = pipeline
-		.clone()
-		.then(HueRotate::new(HueRange::relaxed(-180, 180)));
+	let train_pipeline = pipeline;
+	// Not needed for luma images.
+	// let train_pipeline =
+	// 	pipeline.then(HueRotate::new(HueRange::relaxed(-180, 180)));
 
 	training::train::<TrainAutodiffBackend>(
 		output_dir,
