@@ -63,7 +63,7 @@ pub struct TrainingConfig {
 	#[config(default = 10)]
 	pub num_epochs: usize,
 	/// Number of samples per training and validation batch.
-	#[config(default = 16)]
+	#[config(default = 8)]
 	pub batch_size: usize,
 	/// Number of data-loading workers.
 	#[config(default = 4)]

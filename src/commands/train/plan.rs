@@ -54,10 +54,11 @@ pub fn load(resume_dir: Option<&Path>) -> Result<TrainingPlan, Box<dyn Error>> {
 }
 
 fn new_training_plan() -> TrainingPlan {
-	let model_config = LaserModelConfig::new().with_dropout(0.1);
+	let model_config = LaserModelConfig::new();
+	let training_config = TrainingConfig::new(model_config, AdamConfig::new())
+		.with_num_workers(8);
 	TrainingPlan {
-		config: TrainingConfig::new(model_config, AdamConfig::new())
-			.with_num_workers(8),
+		config: training_config,
 		resume: None,
 	}
 }
