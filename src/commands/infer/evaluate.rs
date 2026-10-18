@@ -40,15 +40,15 @@ use vision_cnn::{
 	inference,
 };
 
-pub fn infer_samples<B, D>(
+#[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
+pub fn infer_samples<B>(
 	model_dir: &Path,
 	num_samples: usize,
-	dataset: &D,
+	dataset: &impl Dataset<LoadedLaserItem<B>>,
 	device: &B::Device,
 ) -> Result<(), Box<dyn Error>>
 where
 	B: Backend,
-	D: Dataset<LoadedLaserItem<B>>,
 {
 	let model_dir = model_dir.to_str().ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "model path is not UTF-8")
@@ -59,25 +59,24 @@ where
 	Ok(())
 }
 
-pub fn evaluate_all<B, D>(
+#[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
+pub fn evaluate_all<B>(
 	model_dir: &Path,
 	batch_size: NonZeroUsize,
 	dataset_name: &str,
 	split_name: &str,
 	report_dir: &Path,
-	dataset: &D,
+	dataset: &impl Dataset<LoadedLaserItem<B>>,
 	device: &B::Device,
 ) -> Result<(), Box<dyn Error>>
 where
 	B: Backend,
-	D: Dataset<LoadedLaserItem<B>>,
 {
 	let model_dir = model_dir.to_str().ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "model path is not UTF-8")
 	})?;
-	let results = inference::infer_dataset::<B, D>(
-		model_dir, device, dataset, batch_size,
-	)?;
+	let results =
+		inference::infer_dataset::<B>(model_dir, device, dataset, batch_size)?;
 	let metrics = regression_metrics(results.0.iter().map(|sample| {
 		(
 			sample.expected_intensity.elem::<f64>(),

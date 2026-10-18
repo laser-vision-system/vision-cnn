@@ -77,15 +77,15 @@ where
 /// Panics if the artifact directory does not contain a readable model
 /// configuration and model export, or if predictions cannot be converted to
 /// the backend's floating-point element type.
-pub fn infer_dataset<B, D>(
+#[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
+pub fn infer_dataset<B>(
 	artefact_dir: &str,
 	device: &B::Device,
-	dataset: &D,
+	dataset: &impl Dataset<LoadedLaserItem<B>>,
 	batch_size: NonZeroUsize,
 ) -> Result<InferenceResults<B::FloatElem>, IoError>
 where
 	B: Backend,
-	D: Dataset<LoadedLaserItem<B>>,
 {
 	let model = load_model(artefact_dir, device);
 	let dataset_len = dataset.len();

@@ -125,7 +125,7 @@ where
 				"--report-dir is required with --evaluate-all",
 			)
 		})?;
-		evaluate::evaluate_all::<B, _>(
+		evaluate::evaluate_all::<B>(
 			&arguments.model_dir,
 			arguments.evaluation_batch_size,
 			dataset_name,
@@ -135,7 +135,7 @@ where
 			device,
 		)
 	} else {
-		evaluate::infer_samples::<B, _>(
+		evaluate::infer_samples::<B>(
 			&arguments.model_dir,
 			arguments.num_samples.get(),
 			test_split,
