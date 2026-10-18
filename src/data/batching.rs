@@ -33,10 +33,14 @@ use super::{
 	LoadedLaserItem,
 };
 
-// const IMG_CHANNELS: u32 = 3;
+const IMG_CHANNELS_LUMA: usize = 1;
+const IMG_CHANNELS_RGB: usize = 3;
 const IMG_HEIGHT: u32 = 480;
 const IMG_WIDTH: u32 = 640;
 const IMG_PIXELS: usize = (IMG_HEIGHT * IMG_WIDTH) as usize;
+
+const BATCH_FEATURE_RANK: usize = 4;
+const BATCH_LABEL_RANK: usize = 1;
 
 /// A collection of input items and labels.
 #[derive(Clone, Debug)]
@@ -45,9 +49,9 @@ where
 	B: Backend,
 {
 	/// The input features.
-	pub images: Tensor<B, 4>,
+	pub images: Tensor<B, BATCH_FEATURE_RANK>,
 	/// The labels.
-	pub targets: Tensor<B, 1>,
+	pub targets: Tensor<B, BATCH_LABEL_RANK>,
 }
 
 /// A unit struct that provides the batching trait implementation.
@@ -129,7 +133,9 @@ where
 {
 	let targets = items
 		.iter()
-		.map(|item| Tensor::<B, 1>::from_data([item.intensity], device))
+		.map(|item| {
+			Tensor::<B, BATCH_LABEL_RANK>::from_data([item.intensity], device)
+		})
 		.collect();
 	let targets = Tensor::cat(targets, 0);
 
@@ -147,7 +153,7 @@ where
 fn luma_images_to_tensor<B, I>(
 	images: I,
 	device: &B::Device,
-) -> Tensor<B, 4>
+) -> Tensor<B, BATCH_FEATURE_RANK>
 where
 	B: Backend,
 	I: ExactSizeIterator<Item = GrayImage>,
@@ -167,7 +173,12 @@ where
 
 	let data = TensorData::new(
 		values,
-		[batch_size, 3, IMG_HEIGHT as usize, IMG_WIDTH as usize],
+		[
+			batch_size,
+			IMG_CHANNELS_LUMA,
+			IMG_HEIGHT as usize,
+			IMG_WIDTH as usize,
+		],
 	);
 	Tensor::from_data(data, device)
 }
@@ -179,13 +190,13 @@ where
 fn rgb_images_to_tensor<B, I>(
 	images: I,
 	device: &B::Device,
-) -> Tensor<B, 4>
+) -> Tensor<B, BATCH_FEATURE_RANK>
 where
 	B: Backend,
 	I: ExactSizeIterator<Item = RgbImage>,
 {
 	let batch_size = images.len();
-	let image_size = IMG_PIXELS * 3;
+	let image_size = IMG_PIXELS * IMG_CHANNELS_RGB;
 	let mut values = vec![0; batch_size * image_size];
 
 	for (image_values, image) in values.chunks_exact_mut(image_size).zip(images)
@@ -215,7 +226,12 @@ where
 
 	let data = TensorData::new(
 		values,
-		[batch_size, 3, IMG_HEIGHT as usize, IMG_WIDTH as usize],
+		[
+			batch_size,
+			IMG_CHANNELS_RGB,
+			IMG_HEIGHT as usize,
+			IMG_WIDTH as usize,
+		],
 	);
 	Tensor::from_data(data, device)
 }
@@ -229,10 +245,38 @@ mod tests {
 	use image::RgbImage;
 
 	use super::*;
-	const IMG_CHANNELS: u32 = 3;
 
 	#[test]
-	fn image_batch_tensor_is_nchw_and_keeps_images_separate() {
+	fn luma_image_batch_tensor_is_nchw_and_keeps_images_separate() {
+		let images = [
+			GrayImage::from_pixel(IMG_WIDTH, IMG_HEIGHT, image::Luma([10])),
+			GrayImage::from_pixel(IMG_WIDTH, IMG_HEIGHT, image::Luma([20])),
+		];
+		let batch_size = images.len();
+		let device = FlexDevice;
+		let tensor =
+			luma_images_to_tensor::<Flex, _>(images.into_iter(), &device);
+		let dimensions = tensor.dims();
+		let values = tensor
+			.into_data()
+			.to_vec::<f32>()
+			.expect("tensor values should be readable");
+
+		assert_eq!(
+			dimensions,
+			[
+				batch_size,
+				IMG_CHANNELS_LUMA,
+				IMG_HEIGHT as usize,
+				IMG_WIDTH as usize
+			]
+		);
+		assert_eq!(values.first(), Some(&10.0));
+		assert_eq!(values.get(IMG_PIXELS), Some(&20.0));
+	}
+
+	#[test]
+	fn rgb_image_batch_tensor_is_nchw_and_keeps_images_separate() {
 		let images = [
 			RgbImage::from_pixel(
 				IMG_WIDTH,
@@ -245,6 +289,7 @@ mod tests {
 				image::Rgb([40, 50, 60]),
 			),
 		];
+		let batch_size = images.len();
 		let device = FlexDevice;
 		let tensor =
 			rgb_images_to_tensor::<Flex, _>(images.into_iter(), &device);
@@ -257,8 +302,8 @@ mod tests {
 		assert_eq!(
 			dimensions,
 			[
-				2,
-				IMG_CHANNELS as usize,
+				batch_size,
+				IMG_CHANNELS_RGB,
 				IMG_HEIGHT as usize,
 				IMG_WIDTH as usize
 			]
