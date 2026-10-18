@@ -1,3 +1,8 @@
+#![expect(
+	clippy::allow_attributes,
+	reason = "Expect may not be fulfilled with swappable batching functions"
+)]
+
 use std::{
 	convert::identity,
 	sync::{
@@ -11,16 +16,20 @@ use burn::{
 	data::dataloader::batcher::Batcher,
 	prelude::*,
 };
-use dataset_loader::{
-	augmentation::ImageStep,
-	item::ImageType,
+use dataset_loader::augmentation::ImageStep;
+use image::{
+	GrayImage,
+	RgbImage,
 };
 use rand::{
 	SeedableRng as _,
 	rngs::StdRng,
 };
 
-use super::LoadedLaserItem;
+use super::{
+	ImageType,
+	LoadedLaserItem,
+};
 
 // const IMG_CHANNELS: u32 = 3;
 const IMG_HEIGHT: u32 = 480;
@@ -118,7 +127,7 @@ where
 	let targets = Tensor::cat(targets, 0);
 
 	let images = items.into_iter().map(|item| modify_image(item.image));
-	let images = images_to_tensor(images, device);
+	let images = luma_images_to_tensor(images, device);
 
 	LaserBatch {
 		images,
@@ -126,16 +135,47 @@ where
 	}
 }
 
-/// Convert from channel-last RGB to channel-first RGB.
-///
-/// Convolution layers are channel-first.
-fn images_to_tensor<B, I>(
+/// Batch luma images into a tensor.
+#[allow(dead_code, reason = "Batching options can be swapped when needed")]
+fn luma_images_to_tensor<B, I>(
 	images: I,
 	device: &B::Device,
 ) -> Tensor<B, 4>
 where
 	B: Backend,
-	I: ExactSizeIterator<Item = ImageType>,
+	I: ExactSizeIterator<Item = GrayImage>,
+{
+	let batch_size = images.len();
+
+	let values = images
+		.inspect(|img| {
+			debug_assert_eq!(
+				img.dimensions(),
+				(IMG_WIDTH, IMG_HEIGHT),
+				"The image did not have the correct dimensions"
+			)
+		})
+		.flat_map(|img| img.to_vec())
+		.collect();
+
+	let data = TensorData::new(
+		values,
+		[batch_size, 3, IMG_HEIGHT as usize, IMG_WIDTH as usize],
+	);
+	Tensor::from_data(data, device)
+}
+
+/// Convert from channel-last RGB to channel-first RGB.
+///
+/// Convolution layers are channel-first.
+#[allow(dead_code, reason = "Batching options can be swapped when needed")]
+fn rgb_images_to_tensor<B, I>(
+	images: I,
+	device: &B::Device,
+) -> Tensor<B, 4>
+where
+	B: Backend,
+	I: ExactSizeIterator<Item = RgbImage>,
 {
 	let batch_size = images.len();
 	let image_size = IMG_PIXELS * 3;
@@ -179,6 +219,7 @@ mod tests {
 		Flex,
 		FlexDevice,
 	};
+	use image::RgbImage;
 
 	use super::*;
 	const IMG_CHANNELS: u32 = 3;
@@ -186,19 +227,20 @@ mod tests {
 	#[test]
 	fn image_batch_tensor_is_nchw_and_keeps_images_separate() {
 		let images = [
-			ImageType::from_pixel(
+			RgbImage::from_pixel(
 				IMG_WIDTH,
 				IMG_HEIGHT,
 				image::Rgb([10, 20, 30]),
 			),
-			ImageType::from_pixel(
+			RgbImage::from_pixel(
 				IMG_WIDTH,
 				IMG_HEIGHT,
 				image::Rgb([40, 50, 60]),
 			),
 		];
 		let device = FlexDevice;
-		let tensor = images_to_tensor::<Flex, _>(images.into_iter(), &device);
+		let tensor =
+			rgb_images_to_tensor::<Flex, _>(images.into_iter(), &device);
 		let dimensions = tensor.dims();
 		let values = tensor
 			.into_data()

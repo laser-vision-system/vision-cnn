@@ -198,14 +198,14 @@ where
 #[cfg(test)]
 mod tests {
 	use burn_flex::Flex;
-	use image::RgbImage;
+	use image::GrayImage;
 
 	use super::*;
 
 	#[test]
 	fn evaluation_metadata_preserves_mapped_float_targets() {
 		let items = [LoadedLaserItem::<Flex> {
-			image: RgbImage::new(1, 1),
+			image: GrayImage::new(1, 1),
 			image_path: "dummy/sample.png".to_owned(),
 			intensity: 7.0,
 			position: Some("sample-a".to_owned()),

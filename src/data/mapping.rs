@@ -16,10 +16,9 @@ use burn::{
 		ElementConversion as _,
 	},
 };
-use dataset_loader::item::{
-	ImageType,
-	LaserItem,
-};
+use dataset_loader::item::LaserItem;
+
+use super::ImageType;
 
 /// The data-structure used post-mapping.
 #[derive(Debug, Clone)]
@@ -49,7 +48,10 @@ where
 		item: &I,
 	) -> LoadedLaserItem<B> {
 		LoadedLaserItem {
-			image: item.load().expect("the image should not fail to load"),
+			image: item
+				.load()
+				.expect("the image should not fail to load")
+				.into(),
 			image_path: item.get_image_path().to_string(),
 			intensity: map_intensity::<B, _>(*item.get_intensity()),
 			position: item.get_position().map(str::to_owned),

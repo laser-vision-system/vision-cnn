@@ -20,3 +20,5 @@ pub use self::{
 		DatasetSplits,
 	},
 };
+
+pub type ImageType = image::GrayImage;
