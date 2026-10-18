@@ -60,7 +60,7 @@ pub struct TrainingConfig {
 	/// Optimiser configuration.
 	pub optimiser: AdamConfig,
 	/// Maximum number of training epochs.
-	#[config(default = 10)]
+	#[config(default = 2)]
 	pub num_epochs: usize,
 	/// Number of samples per training and validation batch.
 	#[config(default = 8)]
