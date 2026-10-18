@@ -35,9 +35,9 @@ pub enum ConvBlockActivation {
 	LeakyRelu(f64),
 }
 
-/// Configuration to create a [`ConvBlock`] with the [init_function].
+/// Configuration to create a [`ConvBlock`] with the [init] function.
 ///
-/// [init_function]: Self::init
+/// [init]: Self::init
 #[derive(Config, Debug)]
 pub struct ConvBlockConfig {
 	/// The number of input channels.

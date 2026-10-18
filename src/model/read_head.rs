@@ -23,11 +23,11 @@ use super::{
 	global_avg_pool::GlobalAvgPooling2d,
 };
 
-/// Configuration to create a [`ReadHead`] with the [init_function].
+/// Configuration to create a [`ReadHead`] with the [init] function.
 ///
 /// Output channels will be `start_channels` * 4.
 ///
-/// [init_function]: Self::init
+/// [init]: Self::init
 #[derive(Config, Debug)]
 pub struct ReadHeadConfig {
 	/// How many channels the input image has.
