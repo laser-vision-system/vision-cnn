@@ -2,14 +2,12 @@
 
 pub mod conv_block;
 pub mod global_avg_pool;
+pub mod read_head;
 
 use burn::{
 	nn::{
-		Dropout,
-		DropoutConfig,
 		Linear,
 		LinearConfig,
-		PaddingConfig2d,
 		loss::{
 			MseLoss,
 			Reduction,
@@ -25,25 +23,18 @@ use burn::{
 	},
 };
 
-use self::{
-	conv_block::{
-		ConvBlock,
-		ConvBlockConfig,
-	},
-	global_avg_pool::GlobalAvgPooling2d,
+use self::read_head::{
+	ReadHead,
+	ReadHeadConfig,
 };
 use crate::data::LaserBatch;
 
 /// Model hyper-parameters for the laser regression CNN.
 #[derive(Config, Debug)]
 pub struct LaserModelConfig {
-	/// The probability of the dropout layer activating.
-	#[config(default = 0.2)]
-	pub dropout: f64,
-	/// Controls the exponential moving average of the mean and variance
-	/// estimates.
-	#[config(default = 0.1)]
-	pub batch_norm_momentum: f64,
+	/// Configuration for the stack that converts images to latent space.
+	#[config(default = "ReadHeadConfig::new()")]
+	pub read_head_config: ReadHeadConfig,
 }
 
 impl LaserModelConfig {
@@ -55,20 +46,13 @@ impl LaserModelConfig {
 	where
 		B: Backend,
 	{
+		let start_channels = self.read_head_config.start_channels;
+		let double = start_channels * 2;
+		let quad = start_channels * 4;
 		LaserModel {
-			read_head: ConvBlockConfig::new(3, 16, PaddingConfig2d::Same)
-				.with_momentum(self.batch_norm_momentum)
-				.init(device),
-			detail_extraction: ConvBlockConfig::new(
-				16,
-				8,
-				PaddingConfig2d::Same,
-			)
-			.with_momentum(self.batch_norm_momentum)
-			.init(device),
-			global_avg_pool: GlobalAvgPooling2d,
-			dropout: DropoutConfig::new(self.dropout).init(),
-			prediction: LinearConfig::new(8, 1).init(device),
+			read_head: self.read_head_config.init(device),
+			hidden: LinearConfig::new(quad, double).init(device),
+			prediction: LinearConfig::new(double, 1).init(device),
 		}
 	}
 }
@@ -76,10 +60,8 @@ impl LaserModelConfig {
 /// The laser intensity prediction model.
 #[derive(Module, Debug)]
 pub struct LaserModel<B: Backend> {
-	read_head: ConvBlock<B>,
-	detail_extraction: ConvBlock<B>,
-	global_avg_pool: GlobalAvgPooling2d,
-	dropout: Dropout,
+	read_head: ReadHead<B>,
+	hidden: Linear<B>,
 	prediction: Linear<B>,
 }
 
@@ -93,14 +75,9 @@ impl<B: Backend> LaserModel<B> {
 		&self,
 		input: Tensor<B, 4>,
 	) -> Tensor<B, 2> {
-		let [_, channels, ..] = input.dims();
-		debug_assert_eq!(channels, 3, "expected an RGB tensor");
-
-		let x = input; // [batch_size, 3, 640, 480]
-		let x = self.read_head.forward(x); // [batch_size, 16, 160, 120]
-		let x = self.detail_extraction.forward(x); // [batch_size, 8, 40, 30]
-		let x = self.global_avg_pool.forward(x); // [batch_size, 8]
-		let x = self.dropout.forward(x);
+		let x = input; // [batch_size, 1, 640, 480]
+		let x = self.read_head.forward(x); // [batch_size, 32]
+		let x = self.hidden.forward(x); // [batch_size, 32]
 		self.prediction.forward(x) // [batch_size, 1]
 	}
 
@@ -159,17 +136,9 @@ mod tests {
 	type Device = burn::prelude::Device<Backend>;
 
 	#[test]
-	fn model_config_exposes_dropout_configuration() {
-		let config = LaserModelConfig::new().with_dropout(0.25);
-		assert!((config.dropout - 0.25).abs() < f64::EPSILON);
-	}
-
-	#[test]
-	fn forward_keeps_batch_shape_for_normalized_inputs() {
+	fn forward_keeps_batch_shape_for_normalised_inputs() {
 		let device = Device::default();
-		let model = LaserModelConfig::new()
-			.with_dropout(0.1)
-			.init::<Backend>(&device);
+		let model = LaserModelConfig::new().init::<Backend>(&device);
 		let images = Tensor::<Backend, 4>::ones(
 			[2_i32, 3_i32, 480_i32, 640_i32],
 			&device,
