@@ -2,6 +2,7 @@
 
 pub mod conv_block;
 pub mod global_avg_pool;
+pub mod normalisation;
 pub mod read_head;
 
 use burn::{
@@ -23,9 +24,15 @@ use burn::{
 	},
 };
 
-use self::read_head::{
-	ReadHead,
-	ReadHeadConfig,
+use self::{
+	normalisation::{
+		Normalisation,
+		NormalisationConfig,
+	},
+	read_head::{
+		ReadHead,
+		ReadHeadConfig,
+	},
 };
 use crate::data::LaserBatch;
 
@@ -50,6 +57,7 @@ impl LaserModelConfig {
 		let double = start_channels * 2;
 		let quad = start_channels * 4;
 		LaserModel {
+			normalisation: NormalisationConfig::new().init(),
 			read_head: self.read_head_config.init(device),
 			hidden: LinearConfig::new(quad, double).init(device),
 			prediction: LinearConfig::new(double, 1).init(device),
@@ -60,6 +68,7 @@ impl LaserModelConfig {
 /// The laser intensity prediction model.
 #[derive(Module, Debug)]
 pub struct LaserModel<B: Backend> {
+	normalisation: Normalisation,
 	read_head: ReadHead<B>,
 	hidden: Linear<B>,
 	prediction: Linear<B>,
@@ -76,6 +85,7 @@ impl<B: Backend> LaserModel<B> {
 		input: Tensor<B, 4>,
 	) -> Tensor<B, 2> {
 		let x = input; // [batch_size, 1, 640, 480]
+		let x = self.normalisation.forward(x);
 		let x = self.read_head.forward(x); // [batch_size, 32]
 		let x = self.hidden.forward(x); // [batch_size, 32]
 		self.prediction.forward(x) // [batch_size, 1]
