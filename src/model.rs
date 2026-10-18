@@ -149,10 +149,7 @@ mod tests {
 	fn forward_keeps_batch_shape_for_normalised_inputs() {
 		let device = Device::default();
 		let model = LaserModelConfig::new().init::<Backend>(&device);
-		let images = Tensor::<Backend, 4>::ones(
-			[2_i32, 3_i32, 480_i32, 640_i32],
-			&device,
-		);
+		let images = Tensor::<Backend, 4>::ones([2, 1, 480, 640], &device);
 		let output = model.forward(images);
 
 		assert_eq!(output.dims(), [2, 1]);
