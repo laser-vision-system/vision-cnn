@@ -30,7 +30,10 @@ use burn::{
 		SupervisedTraining,
 		metric::{
 			CpuMemory,
+			CpuUse,
 			CudaMetric,
+			IterationSpeedMetric,
+			LearningRateMetric,
 			LossMetric,
 			store::{
 				Aggregate,
@@ -162,20 +165,14 @@ pub fn train<B>(
 		.num_workers(config.num_workers)
 		.build(val_split);
 
-	let valid_loss_metric = LossMetric::new();
+	let loss_metric = LossMetric::new();
 	let mut training = SupervisedTraining::new(
 		artefact_dir,
 		dataloader_train,
 		dataloader_valid,
 	)
-	.metric_train_numeric(LossMetric::new())
-	.metric_train(CudaMetric::new())
-	.metric_train(CpuMemory::new())
-	.metric_valid_numeric(valid_loss_metric.clone())
-	.metric_valid(CudaMetric::new())
-	.metric_valid(CpuMemory::new())
 	.early_stopping(MetricEarlyStoppingStrategy::new(
-		&valid_loss_metric,
+		&loss_metric,
 		Aggregate::Mean,
 		Direction::Lowest,
 		Split::Valid,
@@ -183,6 +180,11 @@ pub fn train<B>(
 			n_epochs: config.early_stopping_patience,
 		},
 	))
+	// The metrics will be ordered the same as they are added.
+	.metrics((loss_metric,))
+	.metric_train_numeric(LearningRateMetric::new())
+	.metrics((IterationSpeedMetric::new(), CpuUse::new(), CpuMemory::new()))
+	.metrics_text((CudaMetric::new(),))
 	.with_file_checkpointer(
 		NamedMpkGzFileRecorder::<FullPrecisionSettings>::new(),
 	)
@@ -190,6 +192,7 @@ pub fn train<B>(
 		epoch.saturating_add(config.num_epochs)
 	}))
 	.summary();
+
 	if let Some((_, epoch)) = resume {
 		training = training.checkpoint(epoch);
 	}
