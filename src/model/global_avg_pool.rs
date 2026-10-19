@@ -24,7 +24,7 @@ pub struct GlobalAvgPooling2d;
 impl GlobalAvgPooling2d {
 	/// Applies the forward pass on the input tensor.
 	///
-	/// See [`adaptive_avg_pool2d`](burn::tensor::module::adaptive_avg_pool2d)
+	/// See [`adaptive_avg_pool2d`]
 	/// for more information.
 	///
 	/// # Shapes
