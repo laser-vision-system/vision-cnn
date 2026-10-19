@@ -383,7 +383,7 @@ mod tests {
 		let mut json = Vec::new();
 		report
 			.write_json(&mut json)
-			.expect("report should serialize as JSON");
+			.expect("report should serialise as JSON");
 		let json_value: serde_json::Value =
 			serde_json::from_slice(&json).expect("report JSON should parse");
 		assert_eq!(
@@ -416,7 +416,7 @@ mod tests {
 		let mut csv_data = Vec::new();
 		report
 			.write_csv(&mut csv_data)
-			.expect("sample rows should serialize as CSV");
+			.expect("sample rows should serialise as CSV");
 		let mut reader = csv::Reader::from_reader(csv_data.as_slice());
 		let headers =
 			reader.headers().expect("CSV headers should exist").clone();

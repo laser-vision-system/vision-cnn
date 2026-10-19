@@ -91,7 +91,7 @@ pub struct TrainingConfig {
 	/// Seed used for backend initialization and data ordering.
 	#[config(default = "SEED_DEFAULT")]
 	pub seed: u64,
-	/// Initial optimizer learning rate.
+	/// Initial optimiser learning rate.
 	#[config(default = "LEARNING_RATE_DEFAULT")]
 	pub learning_rate: f64,
 	/// Inverse-time learning-rate decay factor.
