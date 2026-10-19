@@ -55,6 +55,23 @@ use crate::{
 	persistence,
 };
 
+/// Default value for the `num_epochs` training hyper-parameter.
+pub const NUM_EPOCHS_DEFAULT: usize = 2;
+/// Default value for the `batch_size` training hyper-parameter.
+pub const BATCH_SIZE_DEFAULT: usize = 8;
+/// Default value for the `num_workers` training hyper-parameter.
+pub const NUM_WORKERS_DEFAULT: usize = 4;
+/// Default value for the `seed` training hyper-parameter.
+pub const SEED_DEFAULT: u64 = 42;
+/// Default value for the `learning_rate` training hyper-parameter.
+pub const LEARNING_RATE_DEFAULT: f64 = 1e-2;
+/// Default value for the `decay_rate` training hyper-parameter.
+pub const DECAY_RATE_DEFAULT: f64 = 0.2;
+/// Default value for the `decay_steps` training hyper-parameter.
+pub const DECAY_STEPS_DEFAULT: usize = 0;
+/// Default value for the `early_stopping_patience` training hyper-parameter.
+pub const EARLY_STOPPING_PATIENCE_DEFAULT: usize = 2;
+
 /// Configuration for training hyper-parameters.
 #[derive(Config, Debug)]
 pub struct TrainingConfig {
@@ -63,29 +80,29 @@ pub struct TrainingConfig {
 	/// Optimiser configuration.
 	pub optimiser: AdamConfig,
 	/// Maximum number of training epochs.
-	#[config(default = 2)]
+	#[config(default = "NUM_EPOCHS_DEFAULT")]
 	pub num_epochs: usize,
 	/// Number of samples per training and validation batch.
-	#[config(default = 8)]
+	#[config(default = "BATCH_SIZE_DEFAULT")]
 	pub batch_size: usize,
 	/// Number of data-loading workers.
-	#[config(default = 4)]
+	#[config(default = "NUM_WORKERS_DEFAULT")]
 	pub num_workers: usize,
 	/// Seed used for backend initialization and data ordering.
-	#[config(default = 42)]
+	#[config(default = "SEED_DEFAULT")]
 	pub seed: u64,
 	/// Initial optimizer learning rate.
-	#[config(default = 1e-2)]
+	#[config(default = "LEARNING_RATE_DEFAULT")]
 	pub learning_rate: f64,
 	/// Inverse-time learning-rate decay factor.
-	#[config(default = 0.2)]
+	#[config(default = "DECAY_RATE_DEFAULT")]
 	pub decay_rate: f64,
 	/// Steps between learning-rate decay intervals; zero derives this from the
 	/// training split and batch size.
-	#[config(default = 0)]
+	#[config(default = "DECAY_STEPS_DEFAULT")]
 	pub decay_steps: usize,
 	/// Number of validation epochs without improvement before stopping.
-	#[config(default = 2)]
+	#[config(default = "EARLY_STOPPING_PATIENCE_DEFAULT")]
 	pub early_stopping_patience: usize,
 }
 

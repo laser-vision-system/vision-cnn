@@ -17,6 +17,14 @@ use burn::{
 use crate::{
 	model::LaserModelConfig,
 	training::{
+		BATCH_SIZE_DEFAULT,
+		DECAY_RATE_DEFAULT,
+		DECAY_STEPS_DEFAULT,
+		EARLY_STOPPING_PATIENCE_DEFAULT,
+		LEARNING_RATE_DEFAULT,
+		NUM_EPOCHS_DEFAULT,
+		NUM_WORKERS_DEFAULT,
+		SEED_DEFAULT,
 		TrainingConfig,
 		latest_checkpoint_epoch,
 	},
@@ -56,8 +64,16 @@ pub fn load(resume_dir: Option<&Path>) -> Result<TrainingPlan, Box<dyn Error>> {
 
 fn new_training_plan() -> TrainingPlan {
 	let model_config = LaserModelConfig::new();
+	// Set up like this to allow for command line arguments to modify.
 	let training_config = TrainingConfig::new(model_config, AdamConfig::new())
-		.with_num_workers(8);
+		.with_num_epochs(NUM_EPOCHS_DEFAULT)
+		.with_batch_size(BATCH_SIZE_DEFAULT)
+		.with_num_workers(NUM_WORKERS_DEFAULT)
+		.with_seed(SEED_DEFAULT)
+		.with_learning_rate(LEARNING_RATE_DEFAULT)
+		.with_decay_rate(DECAY_RATE_DEFAULT)
+		.with_decay_steps(DECAY_STEPS_DEFAULT)
+		.with_early_stopping_patience(EARLY_STOPPING_PATIENCE_DEFAULT);
 	TrainingPlan {
 		config: training_config,
 		resume: None,
