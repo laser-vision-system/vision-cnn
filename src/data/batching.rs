@@ -166,7 +166,7 @@ where
 				img.dimensions(),
 				(IMG_WIDTH, IMG_HEIGHT),
 				"The image did not have the correct dimensions"
-			)
+			);
 		})
 		.flat_map(|img| img.to_vec())
 		.collect();
