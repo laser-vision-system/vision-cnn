@@ -22,4 +22,5 @@ pub mod inference;
 pub mod learning_rate;
 pub mod model;
 pub mod persistence;
+pub mod plan;
 pub mod training;

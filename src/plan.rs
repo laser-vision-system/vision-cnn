@@ -13,7 +13,8 @@ use burn::{
 	optim::AdamConfig,
 	prelude::Config as _,
 };
-use vision_cnn::{
+
+use crate::{
 	model::LaserModelConfig,
 	training::{
 		TrainingConfig,

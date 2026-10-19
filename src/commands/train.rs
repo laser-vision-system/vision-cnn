@@ -1,7 +1,6 @@
 //! Training command arguments and orchestration.
 
 mod output;
-mod plan;
 
 use std::{
 	error::Error,
@@ -37,6 +36,7 @@ use dataset_loader::augmentation::{
 };
 use vision_cnn::{
 	data,
+	plan,
 	training,
 };
 
