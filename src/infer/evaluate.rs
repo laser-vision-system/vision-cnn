@@ -40,9 +40,18 @@ use vision_cnn::{
 	inference,
 };
 
+/// Directory and exported filename identifying a trained model.
+pub struct ModelExport<'a> {
+	/// Artefact directory containing the model export and config.
+	pub directory: &'a Path,
+	/// Exported filename without the `.bpk` extension.
+	pub name: &'a str,
+}
+
 #[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
 pub fn infer_samples<B>(
 	model_dir: &Path,
+	model_name: &str,
 	num_samples: usize,
 	dataset: &impl Dataset<LoadedLaserItem<B>>,
 	device: &B::Device,
@@ -50,18 +59,21 @@ pub fn infer_samples<B>(
 where
 	B: Backend,
 {
+	// TODO: Pre-validate?
 	let model_dir = model_dir.to_str().ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "model path is not UTF-8")
 	})?;
 	let items: Vec<_> = dataset.iter().take(num_samples).collect();
-	let results = inference::infer::<B>(model_dir, device, items);
+	let model = inference::load_model::<B>(model_dir, model_name, device);
+	let results = inference::infer(&model, device, items);
 	print_results(&results);
 	Ok(())
 }
 
+/// Evaluate all samples in a dataset using a named model export.
 #[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
-pub fn evaluate_all<B>(
-	model_dir: &Path,
+pub fn evaluate_all_named<B>(
+	model_export: &ModelExport<'_>,
 	batch_size: NonZeroUsize,
 	dataset_name: &str,
 	split_name: &str,
@@ -72,11 +84,43 @@ pub fn evaluate_all<B>(
 where
 	B: Backend,
 {
-	let model_dir = model_dir.to_str().ok_or_else(|| {
+	let model_dir = model_export.directory.to_str().ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "model path is not UTF-8")
 	})?;
+	let model =
+		inference::load_model::<B>(model_dir, model_export.name, device);
+	evaluate_all_with_model(
+		&model,
+		batch_size,
+		dataset_name,
+		split_name,
+		report_dir,
+		dataset,
+		device,
+	)
+}
+
+/// Evaluate all samples using a model already loaded in memory.
+///
+/// # Errors
+///
+/// Returns an error if a dataset sample or report file cannot be read or
+/// written.
+#[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
+pub fn evaluate_all_with_model<B>(
+	model: &vision_cnn::model::LaserModel<B>,
+	batch_size: NonZeroUsize,
+	dataset_name: &str,
+	split_name: &str,
+	report_dir: &Path,
+	dataset: &impl Dataset<LoadedLaserItem<B>>,
+	device: &B::Device,
+) -> Result<(), Box<dyn Error>>
+where
+	B: Backend,
+{
 	let results =
-		inference::infer_dataset::<B>(model_dir, device, dataset, batch_size)?;
+		inference::infer_dataset::<B>(model, device, dataset, batch_size)?;
 	let metrics = regression_metrics(results.0.iter().map(|sample| {
 		(
 			sample.expected_intensity.elem::<f64>(),

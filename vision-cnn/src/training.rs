@@ -52,7 +52,7 @@ use crate::{
 	},
 	learning_rate::InverseTimeDecayLrScheduler,
 	model::LaserModelConfig,
-	persistence,
+	plan::TrainingPlan,
 };
 
 /// Default value for the `num_epochs` training hyper-parameter.
@@ -106,7 +106,7 @@ pub struct TrainingConfig {
 	pub early_stopping_patience: usize,
 }
 
-/// Find the greatest checkpoint epoch in an artifact directory.
+/// Find the greatest checkpoint epoch in an artefact directory.
 ///
 /// Returns `None` when the checkpoint directory cannot be read or contains no
 /// filename with a parseable `model-<epoch>` prefix.
@@ -129,24 +129,34 @@ pub fn latest_checkpoint_epoch(artefact_dir: &str) -> Option<usize> {
 /// # Panics
 ///
 /// - If the config could not be saved.
-/// - If the model could not be exported.
 /// - If a requested resume checkpoint cannot be copied.
+/// - If a resume or output directory cannot be canonicalised.
+// TODO: Decompose this function.
 #[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
 pub fn train<B>(
 	artefact_dir: &str,
-	config: &TrainingConfig,
+	plan: &TrainingPlan,
 	device: &B::Device,
 	splits: DatasetSplits<impl Backend<FloatElem = B::FloatElem>>,
 	train_augmentation: impl ImageStep + 'static,
 	valid_augmentation: impl ImageStep + 'static,
-	resume: Option<(&str, usize)>,
-) where
+) -> crate::model::LaserModel<B::InnerBackend>
+where
 	B: AutodiffBackend,
 {
-	create_artefact_dir(artefact_dir);
+	let config = plan.config();
+	let resume = plan.resume();
+
 	if let Some((resume_dir, _)) = resume {
-		copy_checkpoints(resume_dir, artefact_dir);
+		let resume_path = fs::canonicalize(resume_dir)
+			.expect("resume directory should exist");
+		let output_path = fs::canonicalize(artefact_dir)
+			.expect("output directory should exist");
+		if resume_path != output_path {
+			copy_checkpoints(resume_dir, artefact_dir);
+		}
 	}
+
 	config
 		.save(format!("{artefact_dir}/config.json"))
 		.expect("Config should be saved successfully");
@@ -183,6 +193,10 @@ pub fn train<B>(
 		.build(val_split);
 
 	let loss_metric = LossMetric::new();
+	let total_epochs = target_epoch(
+		resume.map(|(_, completed_epochs)| completed_epochs),
+		config.num_epochs,
+	);
 	let mut training = SupervisedTraining::new(
 		artefact_dir,
 		dataloader_train,
@@ -205,9 +219,7 @@ pub fn train<B>(
 	.with_file_checkpointer(
 		NamedMpkGzFileRecorder::<FullPrecisionSettings>::new(),
 	)
-	.num_epochs(resume.map_or(config.num_epochs, |(_, epoch)| {
-		epoch.saturating_add(config.num_epochs)
-	}))
+	.num_epochs(total_epochs)
 	.summary();
 
 	if let Some((_, epoch)) = resume {
@@ -226,15 +238,16 @@ pub fn train<B>(
 		scheduler,
 	));
 
-	persistence::export_model(
-		&result.model,
-		Path::new(artefact_dir).join("model.bpk"),
-	)
-	.expect("Training model should be exported successfully");
+	result.model
 }
 
-fn create_artefact_dir(artefact_dir: &str) {
-	_ = fs::create_dir_all(artefact_dir);
+fn target_epoch(
+	completed_epochs: Option<usize>,
+	epochs_to_run: usize,
+) -> usize {
+	completed_epochs.map_or(epochs_to_run, |completed| {
+		completed.saturating_add(epochs_to_run)
+	})
 }
 
 fn copy_checkpoints(
@@ -276,4 +289,15 @@ fn steps_per_epoch(
 	let partial_batch = usize::from(!dataset_len.is_multiple_of(batch_size));
 	let steps = full_batches + partial_batch;
 	if steps == 0 { 1 } else { steps }
+}
+
+#[cfg(test)]
+mod tests {
+	use super::target_epoch;
+
+	#[test]
+	fn resumed_epoch_count_is_additive() {
+		assert_eq!(target_epoch(Some(3), 2), 5);
+		assert_eq!(target_epoch(None, 2), 2);
+	}
 }

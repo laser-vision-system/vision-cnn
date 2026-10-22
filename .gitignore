@@ -28,3 +28,14 @@ rustc-ice-*.txt
 
 # Folder for temporary files
 temp/
+
+# Prevent runtime artifacts from making it into the ref tree
+output/
+reports/
+config.json
+*.log
+*.mpk.gz
+*.mpk
+*.bpk
+metrics.json
+samples.csv

@@ -7105,6 +7105,7 @@ dependencies = [
  "burn",
  "clap",
  "dataset-loader",
+ "time",
  "vision-cnn",
 ]
 

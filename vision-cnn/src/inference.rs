@@ -44,29 +44,29 @@ struct SampleMetadata<T> {
 	source_fields: Vec<(&'static str, String)>,
 }
 
-/// Run inference for an in-memory collection of mapped samples.
+/// Run inference for an in-memory collection of mapped samples using the passed
+/// model.
 ///
 /// # Panics
 ///
-/// Panics if the artifact directory does not contain a readable model
-/// configuration and model export, or if predictions cannot be converted to
-/// the backend's floating-point element type.
+/// Panics if predictions cannot be converted to the backend's floating-point
+/// element type.
 pub fn infer<B>(
-	artefact_dir: &str,
+	model: &LaserModel<B>,
 	device: &B::Device,
 	items: Vec<LoadedLaserItem<B>>,
 ) -> InferenceResults<B::FloatElem>
 where
 	B: Backend,
 {
-	let model = load_model(artefact_dir, device);
 	let metadata = collect_metadata(&items);
 	let batch = create_batch(items, device);
-	let predictions = predict(&model, batch);
+	let predictions = predict(model, batch);
 	assemble_results(metadata, predictions)
 }
 
-/// Infer every sample in a dataset using bounded batches.
+/// Infer every sample in a dataset using the passed model and
+/// batch size.
 ///
 /// # Errors
 ///
@@ -74,12 +74,11 @@ where
 ///
 /// # Panics
 ///
-/// Panics if the artifact directory does not contain a readable model
-/// configuration and model export, or if predictions cannot be converted to
-/// the backend's floating-point element type.
+/// Panics if predictions cannot be converted to the backend's floating-point
+/// element type.
 #[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
 pub fn infer_dataset<B>(
-	artefact_dir: &str,
+	model: &LaserModel<B>,
 	device: &B::Device,
 	dataset: &impl Dataset<LoadedLaserItem<B>>,
 	batch_size: NonZeroUsize,
@@ -87,7 +86,6 @@ pub fn infer_dataset<B>(
 where
 	B: Backend,
 {
-	let model = load_model(artefact_dir, device);
 	let dataset_len = dataset.len();
 	let mut samples = Vec::with_capacity(dataset_len);
 
@@ -104,15 +102,22 @@ where
 			})
 			.collect::<Result<Vec<_>, _>>()?;
 		let metadata = collect_metadata(&items);
-		let predictions = predict(&model, create_batch(items, device));
+		let predictions = predict(model, create_batch(items, device));
 		samples.extend(assemble_results(metadata, predictions).0);
 	}
 
 	Ok(InferenceResults(samples))
 }
 
-fn load_model<B>(
+/// Load a named exported model and its training configuration from an artefact
+/// directory.
+///
+/// # Panics
+///
+/// Panics if the configuration or named model export cannot be loaded.
+pub fn load_model<B>(
 	artefact_dir: &str,
+	model_name: &str,
 	device: &B::Device,
 ) -> LaserModel<B>
 where
@@ -122,7 +127,7 @@ where
 		.expect("Config should exist for the model; run train first");
 	persistence::load_model(
 		&config.model,
-		Path::new(artefact_dir).join("model.bpk"),
+		Path::new(artefact_dir).join(format!("{model_name}")),
 		device,
 	)
 	.expect("Trained model should exist; run train first")
