@@ -1,0 +1,49 @@
+[package]
+name = "vision-cnn"
+version = "0.17.0"
+edition.workspace = true
+
+[features]
+default = [
+	"cuda",
+]
+cuda = [
+	"burn/cuda",
+	"burn/fusion",
+	"burn-store/cuda"
+]
+
+[dependencies]
+burn = { version = "0.21", default-features = false, features = [
+	"std",
+	"train",
+	"tui",
+	"metrics",
+]}
+burn-store = { version = "0.21", default-features = false, features = [
+	"std",
+	"burnpack",
+]}
+csv = "1.4"
+dataset-loader = { path = "../dataset-loader" }
+image = { version = "0.25", default-features = false, features = [
+	"rayon",
+] }
+rand = "0.10"
+serde = { version = "1", default-features = false, features = [
+	"derive",
+]}
+serde_json = "1"
+
+[dev-dependencies]
+burn = { version = "0.21", features = [
+	"flex",
+	"simd",
+]}
+burn-flex = { version = "0.21", features = [
+	"rayon",
+	"simd",
+]}
+
+[lints]
+workspace = true

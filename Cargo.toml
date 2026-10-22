@@ -1,65 +1,41 @@
-[package]
-name = "vision-cnn"
-edition = "2024"
-version = "0.1.0"
+[workspace]
+resolver = "3"
+exclude = [
+	"dataset-loader"
+]
+members = ["vision-cnn"]
 
-[features]
-default = [
-	"cuda",
-]
-cuda = [
-	"burn/cuda",
-	"burn/fusion",
-	"burn-store/cuda"
-]
+[workspace.package]
+edition = "2024"
+
+[package]
+name = "vision-cnn-cli"
+version = "0.1.0"
+edition.workspace = true
 
 [dependencies]
+vision-cnn = { path = "./vision-cnn"}
+dataset-loader = { path = "./dataset-loader" }
+
 burn = { version = "0.21", default-features = false, features = [
 	"std",
-	"dataset",
-	"train",
-	"tui",
-	"metrics",
-	"store",
-]}
-burn-store = { version = "0.21", default-features = false, features = [
-	"std",
-	"burnpack",
 ]}
 clap = { version = "4.6", features = [
 	"derive",
 ] }
-csv = "1.4"
-dataset-loader = { path = "./dataset-loader" }
-image = { version = "0.25", default-features = false, features = [
-	"rayon",
-	"png",
-] }
-rand = "0.10"
-serde = { version = "1", default-features = false, features = [
-	"derive",
-]}
-serde_json = "1"
 
-[dev-dependencies]
-burn = { version = "0.21", features = [
-	"flex",
-	"simd",
-]}
-burn-flex = { version = "0.21", features = [
-	"rayon",
-	"simd",
-]}
+[lints]
+workspace = true
 
-[lints.rust]
+[workspace.lints.rust]
 unsafe_code = "deny" # We should avoid using unsafe code as much as possible.
 missing_docs = "deny" # Make sure to include documentation.
 
-[lints.rustdoc]
+[workspace.lints.rustdoc]
 missing_crate_level_docs = "deny"
 broken_intra_doc_links = "deny"
 
-[lints.clippy]
+[workspace.lints.clippy]
 
 tabs_in_doc_comments = "allow" # Tabs expected for indentation.
 
