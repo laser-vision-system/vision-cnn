@@ -68,17 +68,17 @@ pub struct TrainOverrideArgs {
 	pub early_stopping_patience: Option<usize>,
 }
 
-impl Into<TrainingOverrides> for TrainOverrideArgs {
-	fn into(self) -> TrainingOverrides {
+impl From<TrainOverrideArgs> for TrainingOverrides {
+	fn from(value: TrainOverrideArgs) -> Self {
 		TrainingOverrides {
-			num_epochs: self.num_epochs,
-			batch_size: self.batch_size,
-			num_workers: self.num_workers,
-			seed: self.seed,
-			learning_rate: self.learning_rate,
-			decay_rate: self.decay_rate,
-			decay_steps: self.decay_steps,
-			early_stopping_patience: self.early_stopping_patience,
+			num_epochs: value.num_epochs,
+			batch_size: value.batch_size,
+			num_workers: value.num_workers,
+			seed: value.seed,
+			learning_rate: value.learning_rate,
+			decay_rate: value.decay_rate,
+			decay_steps: value.decay_steps,
+			early_stopping_patience: value.early_stopping_patience,
 		}
 	}
 }
