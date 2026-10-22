@@ -127,7 +127,7 @@ where
 		.expect("Config should exist for the model; run train first");
 	persistence::load_model(
 		&config.model,
-		Path::new(artefact_dir).join(format!("{model_name}")),
+		Path::new(artefact_dir).join(model_name),
 		device,
 	)
 	.expect("Trained model should exist; run train first")
