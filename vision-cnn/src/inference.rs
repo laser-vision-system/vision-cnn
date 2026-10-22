@@ -1,6 +1,10 @@
 //! Model inference over individual samples or complete datasets.
 
 #![expect(clippy::expect_used, reason = "No need to worry about panic here")]
+#![expect(
+	clippy::inline_trait_bounds,
+	reason = "Only used with a single generic parameter"
+)]
 
 pub mod result;
 
@@ -51,14 +55,11 @@ struct SampleMetadata<T> {
 ///
 /// Panics if predictions cannot be converted to the backend's floating-point
 /// element type.
-pub fn infer<B>(
+pub fn infer<B: Backend>(
 	model: &LaserModel<B>,
 	device: &B::Device,
 	items: Vec<LoadedLaserItem<B>>,
-) -> InferenceResults<B::FloatElem>
-where
-	B: Backend,
-{
+) -> InferenceResults<B::FloatElem> {
 	let metadata = collect_metadata(&items);
 	let batch = create_batch(items, device);
 	let predictions = predict(model, batch);
@@ -76,16 +77,12 @@ where
 ///
 /// Panics if predictions cannot be converted to the backend's floating-point
 /// element type.
-#[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
-pub fn infer_dataset<B>(
+pub fn infer_dataset<B: Backend>(
 	model: &LaserModel<B>,
 	device: &B::Device,
 	dataset: &impl Dataset<LoadedLaserItem<B>>,
 	batch_size: NonZeroUsize,
-) -> Result<InferenceResults<B::FloatElem>, IoError>
-where
-	B: Backend,
-{
+) -> Result<InferenceResults<B::FloatElem>, IoError> {
 	let dataset_len = dataset.len();
 	let mut samples = Vec::with_capacity(dataset_len);
 
@@ -115,14 +112,11 @@ where
 /// # Panics
 ///
 /// Panics if the configuration or named model export cannot be loaded.
-pub fn load_model<B>(
+pub fn load_model<B: Backend>(
 	artefact_dir: &str,
 	model_name: &str,
 	device: &B::Device,
-) -> LaserModel<B>
-where
-	B: Backend,
-{
+) -> LaserModel<B> {
 	let config = TrainingConfig::load(format!("{artefact_dir}/config.json"))
 		.expect("Config should exist for the model; run train first");
 	persistence::load_model(
@@ -133,12 +127,9 @@ where
 	.expect("Trained model should exist; run train first")
 }
 
-fn collect_metadata<B>(
+fn collect_metadata<B: Backend>(
 	items: &[LoadedLaserItem<B>]
-) -> Vec<SampleMetadata<B::FloatElem>>
-where
-	B: Backend,
-{
+) -> Vec<SampleMetadata<B::FloatElem>> {
 	items
 		.iter()
 		.map(|item| {
@@ -152,23 +143,17 @@ where
 		.collect()
 }
 
-fn create_batch<B>(
+fn create_batch<B: Backend>(
 	items: Vec<LoadedLaserItem<B>>,
 	device: &B::Device,
-) -> LaserBatch<B>
-where
-	B: Backend,
-{
+) -> LaserBatch<B> {
 	LaserBatcher.batch(items, device)
 }
 
-fn predict<B>(
+fn predict<B: Backend>(
 	model: &LaserModel<B>,
 	batch: LaserBatch<B>,
-) -> Vec<B::FloatElem>
-where
-	B: Backend,
-{
+) -> Vec<B::FloatElem> {
 	model
 		.forward(batch.images)
 		.flatten::<1>(0_i32, 1_i32)
@@ -177,13 +162,10 @@ where
 		.expect("model should return one prediction per sample")
 }
 
-fn assemble_results<T>(
+fn assemble_results<T: Element>(
 	metadata: Vec<SampleMetadata<T>>,
 	predictions: Vec<T>,
-) -> InferenceResults<T>
-where
-	T: Element,
-{
+) -> InferenceResults<T> {
 	let samples = metadata
 		.into_iter()
 		.zip(predictions)

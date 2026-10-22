@@ -5,6 +5,10 @@
 	clippy::redundant_field_names,
 	reason = "Caused by Burn's `Config` derive"
 )]
+#![expect(
+	clippy::inline_trait_bounds,
+	reason = "Only used with a single generic parameter"
+)]
 
 use std::{
 	fs,
@@ -132,18 +136,14 @@ pub fn latest_checkpoint_epoch(artefact_dir: &str) -> Option<usize> {
 /// - If a requested resume checkpoint cannot be copied.
 /// - If a resume or output directory cannot be canonicalised.
 // TODO: Decompose this function.
-#[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
-pub fn train<B>(
+pub fn train<B: AutodiffBackend>(
 	artefact_dir: &str,
 	plan: &TrainingPlan,
 	device: &B::Device,
 	splits: DatasetSplits<impl Backend<FloatElem = B::FloatElem>>,
 	train_augmentation: impl ImageStep + 'static,
 	valid_augmentation: impl ImageStep + 'static,
-) -> crate::model::LaserModel<B::InnerBackend>
-where
-	B: AutodiffBackend,
-{
+) -> crate::model::LaserModel<B::InnerBackend> {
 	let config = plan.config();
 	let resume = plan.resume();
 

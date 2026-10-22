@@ -9,10 +9,7 @@ use burn::tensor::Element;
 
 /// The metadata and inferred intensity for one dataset sample.
 #[derive(Clone, Debug, PartialEq)]
-pub struct SampleInference<T>
-where
-	T: Element,
-{
+pub struct SampleInference<T: Element> {
 	/// Canonical image path identifying this sample on the current machine.
 	pub image_path: String,
 	/// Position metadata, when the source dataset provides it.
@@ -25,10 +22,7 @@ where
 	pub source_fields: Vec<(&'static str, String)>,
 }
 
-impl<T> SampleInference<T>
-where
-	T: Element,
-{
+impl<T: Element> SampleInference<T> {
 	fn row(
 		&self,
 		field_names: &[&str],
@@ -49,10 +43,7 @@ where
 	}
 }
 
-impl<T> Display for SampleInference<T>
-where
-	T: Element,
-{
+impl<T: Element> Display for SampleInference<T> {
 	fn fmt(
 		&self,
 		f: &mut fmt::Formatter<'_>,
@@ -74,14 +65,9 @@ where
 
 /// A collection of sample inference results, formatted as a table.
 #[derive(Clone, Debug, PartialEq)]
-pub struct InferenceResults<T>(pub Vec<SampleInference<T>>)
-where
-	T: Element;
+pub struct InferenceResults<T: Element>(pub Vec<SampleInference<T>>);
 
-impl<T> InferenceResults<T>
-where
-	T: Element,
-{
+impl<T: Element> InferenceResults<T> {
 	fn source_field_names(&self) -> Vec<&'static str> {
 		let mut names = Vec::new();
 		for result in &self.0 {
@@ -105,10 +91,7 @@ where
 	}
 }
 
-impl<T> Display for InferenceResults<T>
-where
-	T: Element,
-{
+impl<T: Element> Display for InferenceResults<T> {
 	fn fmt(
 		&self,
 		f: &mut fmt::Formatter<'_>,

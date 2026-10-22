@@ -42,7 +42,7 @@ pub type LoadedDataset<B> = Box<dyn Dataset<LoadedLaserItem<B>>>;
 
 /// Maps source items and converts their intensity to the backend float type.
 #[derive(Clone, Copy, Debug, Default)]
-pub struct LaserItemMapper<B>(PhantomData<B>);
+pub struct LaserItemMapper<B: Backend>(PhantomData<B>);
 
 impl<B, I, T> Mapper<I, LoadedLaserItem<B>> for LaserItemMapper<B>
 where

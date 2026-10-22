@@ -4,6 +4,10 @@
 	clippy::print_stdout,
 	reason = "Evaluation reports its results in the terminal"
 )]
+#![expect(
+	clippy::inline_trait_bounds,
+	reason = "Only used with a single generic parameter"
+)]
 
 use std::{
 	error::Error,
@@ -48,17 +52,13 @@ pub struct ModelExport<'a> {
 	pub name: &'a str,
 }
 
-#[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
-pub fn infer_samples<B>(
+pub fn infer_samples<B: Backend>(
 	model_dir: &Path,
 	model_name: &str,
 	num_samples: usize,
 	dataset: &impl Dataset<LoadedLaserItem<B>>,
 	device: &B::Device,
-) -> Result<(), Box<dyn Error>>
-where
-	B: Backend,
-{
+) -> Result<(), Box<dyn Error>> {
 	// TODO: Pre-validate?
 	let model_dir = model_dir.to_str().ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "model path is not UTF-8")
@@ -71,8 +71,7 @@ where
 }
 
 /// Evaluate all samples in a dataset using a named model export.
-#[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
-pub fn evaluate_all_named<B>(
+pub fn evaluate_all_named<B: Backend>(
 	model_export: &ModelExport<'_>,
 	batch_size: NonZeroUsize,
 	dataset_name: &str,
@@ -80,10 +79,7 @@ pub fn evaluate_all_named<B>(
 	report_dir: &Path,
 	dataset: &impl Dataset<LoadedLaserItem<B>>,
 	device: &B::Device,
-) -> Result<(), Box<dyn Error>>
-where
-	B: Backend,
-{
+) -> Result<(), Box<dyn Error>> {
 	let model_dir = model_export.directory.to_str().ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "model path is not UTF-8")
 	})?;
@@ -106,8 +102,7 @@ where
 ///
 /// Returns an error if a dataset sample or report file cannot be read or
 /// written.
-#[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
-pub fn evaluate_all_with_model<B>(
+pub fn evaluate_all_with_model<B: Backend>(
 	model: &vision_cnn::model::LaserModel<B>,
 	batch_size: NonZeroUsize,
 	dataset_name: &str,
@@ -115,10 +110,7 @@ pub fn evaluate_all_with_model<B>(
 	report_dir: &Path,
 	dataset: &impl Dataset<LoadedLaserItem<B>>,
 	device: &B::Device,
-) -> Result<(), Box<dyn Error>>
-where
-	B: Backend,
-{
+) -> Result<(), Box<dyn Error>> {
 	let results =
 		inference::infer_dataset::<B>(model, device, dataset, batch_size)?;
 	let metrics = regression_metrics(results.0.iter().map(|sample| {
@@ -171,10 +163,7 @@ fn print_metrics(metrics: &RegressionMetrics) {
 	}
 }
 
-fn print_results<T>(results: &inference::result::InferenceResults<T>)
-where
-	T: Element,
-{
+fn print_results<T: Element>(results: &inference::result::InferenceResults<T>) {
 	println!("{results}");
 }
 

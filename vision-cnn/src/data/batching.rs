@@ -44,10 +44,7 @@ const BATCH_LABEL_RANK: usize = 1;
 
 /// A collection of input items and labels.
 #[derive(Clone, Debug)]
-pub struct LaserBatch<B>
-where
-	B: Backend,
-{
+pub struct LaserBatch<B: Backend> {
 	/// The input features.
 	pub images: Tensor<B, BATCH_FEATURE_RANK>,
 	/// The labels.
@@ -75,18 +72,12 @@ where
 
 /// Provides image augmentation alongside batching operations.
 #[derive(Clone)]
-pub struct AugmentedLaserBatcher<P>
-where
-	P: ImageStep,
-{
+pub struct AugmentedLaserBatcher<P: ImageStep> {
 	augmentation: P,
 	rng: Arc<Mutex<StdRng>>,
 }
 
-impl<P> AugmentedLaserBatcher<P>
-where
-	P: ImageStep,
-{
+impl<P: ImageStep> AugmentedLaserBatcher<P> {
 	/// Create a batcher with an augmentation pipeline defined at compile time.
 	pub fn new(
 		augmentation: P,

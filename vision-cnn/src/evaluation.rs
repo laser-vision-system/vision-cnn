@@ -1,5 +1,10 @@
 //! Regression metrics for model evaluation.
 
+#![expect(
+	clippy::inline_trait_bounds,
+	reason = "Only used with a single generic parameter"
+)]
+
 use std::{
 	collections::BTreeMap,
 	error::Error,
@@ -237,12 +242,9 @@ impl EvaluationReport {
 	clippy::cast_precision_loss,
 	reason = "The sample count is bounded by the allocated in-memory evaluation pairs"
 )]
-pub fn regression_metrics<I>(
+pub fn regression_metrics<I: IntoIterator<Item = (f64, f64)>>(
 	samples: I
-) -> Result<RegressionMetrics, RegressionMetricsError>
-where
-	I: IntoIterator<Item = (f64, f64)>,
-{
+) -> Result<RegressionMetrics, RegressionMetricsError> {
 	let mut absolute_errors = Vec::new();
 	let mut squared_error_sum = 0.0;
 	let mut signed_error_sum = 0.0;

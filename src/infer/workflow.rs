@@ -1,5 +1,10 @@
 //! Execute sample inference or full-split evaluation.
 
+#![expect(
+	clippy::inline_trait_bounds,
+	reason = "Only used with a single generic parameter"
+)]
+
 use std::error::Error;
 
 use burn::{
@@ -45,15 +50,12 @@ pub fn run(args: &InferArgs) -> Result<(), Box<dyn Error>> {
 	)
 }
 
-fn run_split<B>(
+fn run_split<B: Backend>(
 	arguments: &InferArgs,
 	paths: &InferPaths,
 	splits: &DatasetSplits<'_, B>,
 	device: &B::Device,
-) -> Result<(), Box<dyn Error>>
-where
-	B: Backend,
-{
+) -> Result<(), Box<dyn Error>> {
 	if arguments.evaluate_all {
 		evaluate_split(arguments, paths, splits, device)
 	} else {
@@ -67,15 +69,12 @@ where
 	}
 }
 
-fn evaluate_split<B>(
+fn evaluate_split<B: Backend>(
 	arguments: &InferArgs,
 	paths: &InferPaths,
 	splits: &DatasetSplits<'_, B>,
 	device: &B::Device,
-) -> Result<(), Box<dyn Error>>
-where
-	B: Backend,
-{
+) -> Result<(), Box<dyn Error>> {
 	let (split_name, dataset) = match arguments.evaluation_split {
 		EvaluationSplit::Validate => ("validation", splits.validation),
 		EvaluationSplit::Test => ("test", splits.test),
