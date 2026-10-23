@@ -5,6 +5,10 @@
 	clippy::redundant_field_names,
 	reason = "Caused by Burn's `Config` derive"
 )]
+#![expect(
+	clippy::inline_trait_bounds,
+	reason = "Only used with a single generic parameter"
+)]
 
 use std::{
 	fs,
@@ -52,8 +56,25 @@ use crate::{
 	},
 	learning_rate::InverseTimeDecayLrScheduler,
 	model::LaserModelConfig,
-	persistence,
+	plan::TrainingPlan,
 };
+
+/// Default value for the `num_epochs` training hyper-parameter.
+pub const NUM_EPOCHS_DEFAULT: usize = 2;
+/// Default value for the `batch_size` training hyper-parameter.
+pub const BATCH_SIZE_DEFAULT: usize = 8;
+/// Default value for the `num_workers` training hyper-parameter.
+pub const NUM_WORKERS_DEFAULT: usize = 4;
+/// Default value for the `seed` training hyper-parameter.
+pub const SEED_DEFAULT: u64 = 42;
+/// Default value for the `learning_rate` training hyper-parameter.
+pub const LEARNING_RATE_DEFAULT: f64 = 1e-2;
+/// Default value for the `decay_rate` training hyper-parameter.
+pub const DECAY_RATE_DEFAULT: f64 = 0.2;
+/// Default value for the `decay_steps` training hyper-parameter.
+pub const DECAY_STEPS_DEFAULT: usize = 0;
+/// Default value for the `early_stopping_patience` training hyper-parameter.
+pub const EARLY_STOPPING_PATIENCE_DEFAULT: usize = 2;
 
 /// Configuration for training hyper-parameters.
 #[derive(Config, Debug)]
@@ -63,33 +84,33 @@ pub struct TrainingConfig {
 	/// Optimiser configuration.
 	pub optimiser: AdamConfig,
 	/// Maximum number of training epochs.
-	#[config(default = 2)]
+	#[config(default = "NUM_EPOCHS_DEFAULT")]
 	pub num_epochs: usize,
 	/// Number of samples per training and validation batch.
-	#[config(default = 8)]
+	#[config(default = "BATCH_SIZE_DEFAULT")]
 	pub batch_size: usize,
 	/// Number of data-loading workers.
-	#[config(default = 4)]
+	#[config(default = "NUM_WORKERS_DEFAULT")]
 	pub num_workers: usize,
 	/// Seed used for backend initialization and data ordering.
-	#[config(default = 42)]
+	#[config(default = "SEED_DEFAULT")]
 	pub seed: u64,
-	/// Initial optimizer learning rate.
-	#[config(default = 1e-2)]
+	/// Initial optimiser learning rate.
+	#[config(default = "LEARNING_RATE_DEFAULT")]
 	pub learning_rate: f64,
 	/// Inverse-time learning-rate decay factor.
-	#[config(default = 0.2)]
+	#[config(default = "DECAY_RATE_DEFAULT")]
 	pub decay_rate: f64,
 	/// Steps between learning-rate decay intervals; zero derives this from the
 	/// training split and batch size.
-	#[config(default = 0)]
+	#[config(default = "DECAY_STEPS_DEFAULT")]
 	pub decay_steps: usize,
 	/// Number of validation epochs without improvement before stopping.
-	#[config(default = 2)]
+	#[config(default = "EARLY_STOPPING_PATIENCE_DEFAULT")]
 	pub early_stopping_patience: usize,
 }
 
-/// Find the greatest checkpoint epoch in an artifact directory.
+/// Find the greatest checkpoint epoch in an artefact directory.
 ///
 /// Returns `None` when the checkpoint directory cannot be read or contains no
 /// filename with a parseable `model-<epoch>` prefix.
@@ -112,24 +133,30 @@ pub fn latest_checkpoint_epoch(artefact_dir: &str) -> Option<usize> {
 /// # Panics
 ///
 /// - If the config could not be saved.
-/// - If the model could not be exported.
 /// - If a requested resume checkpoint cannot be copied.
-#[expect(clippy::impl_trait_in_params, reason = "Hide generic from turbofish")]
-pub fn train<B>(
+/// - If a resume or output directory cannot be canonicalised.
+// TODO: Decompose this function.
+pub fn train<B: AutodiffBackend>(
 	artefact_dir: &str,
-	config: &TrainingConfig,
+	plan: &TrainingPlan,
 	device: &B::Device,
 	splits: DatasetSplits<impl Backend<FloatElem = B::FloatElem>>,
 	train_augmentation: impl ImageStep + 'static,
 	valid_augmentation: impl ImageStep + 'static,
-	resume: Option<(&str, usize)>,
-) where
-	B: AutodiffBackend,
-{
-	create_artefact_dir(artefact_dir);
+) -> crate::model::LaserModel<B::InnerBackend> {
+	let config = plan.config();
+	let resume = plan.resume();
+
 	if let Some((resume_dir, _)) = resume {
-		copy_checkpoints(resume_dir, artefact_dir);
+		let resume_path = fs::canonicalize(resume_dir)
+			.expect("resume directory should exist");
+		let output_path = fs::canonicalize(artefact_dir)
+			.expect("output directory should exist");
+		if resume_path != output_path {
+			copy_checkpoints(resume_dir, artefact_dir);
+		}
 	}
+
 	config
 		.save(format!("{artefact_dir}/config.json"))
 		.expect("Config should be saved successfully");
@@ -166,6 +193,10 @@ pub fn train<B>(
 		.build(val_split);
 
 	let loss_metric = LossMetric::new();
+	let total_epochs = target_epoch(
+		resume.map(|(_, completed_epochs)| completed_epochs),
+		config.num_epochs,
+	);
 	let mut training = SupervisedTraining::new(
 		artefact_dir,
 		dataloader_train,
@@ -188,9 +219,7 @@ pub fn train<B>(
 	.with_file_checkpointer(
 		NamedMpkGzFileRecorder::<FullPrecisionSettings>::new(),
 	)
-	.num_epochs(resume.map_or(config.num_epochs, |(_, epoch)| {
-		epoch.saturating_add(config.num_epochs)
-	}))
+	.num_epochs(total_epochs)
 	.summary();
 
 	if let Some((_, epoch)) = resume {
@@ -209,15 +238,16 @@ pub fn train<B>(
 		scheduler,
 	));
 
-	persistence::export_model(
-		&result.model,
-		Path::new(artefact_dir).join("model.bpk"),
-	)
-	.expect("Training model should be exported successfully");
+	result.model
 }
 
-fn create_artefact_dir(artefact_dir: &str) {
-	_ = fs::create_dir_all(artefact_dir);
+fn target_epoch(
+	completed_epochs: Option<usize>,
+	epochs_to_run: usize,
+) -> usize {
+	completed_epochs.map_or(epochs_to_run, |completed| {
+		completed.saturating_add(epochs_to_run)
+	})
 }
 
 fn copy_checkpoints(
@@ -259,4 +289,15 @@ fn steps_per_epoch(
 	let partial_batch = usize::from(!dataset_len.is_multiple_of(batch_size));
 	let steps = full_batches + partial_batch;
 	if steps == 0 { 1 } else { steps }
+}
+
+#[cfg(test)]
+mod tests {
+	use super::target_epoch;
+
+	#[test]
+	fn resumed_epoch_count_is_additive() {
+		assert_eq!(target_epoch(Some(3), 2), 5);
+		assert_eq!(target_epoch(None, 2), 2);
+	}
 }

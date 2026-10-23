@@ -2,11 +2,6 @@
 //!
 //! Similar to a tokeniser for an LLM.
 
-#![expect(
-	clippy::redundant_field_names,
-	reason = "Caused by Burn's `Config` derive"
-)]
-
 use burn::{
 	nn::pool::{
 		MaxPool2d,

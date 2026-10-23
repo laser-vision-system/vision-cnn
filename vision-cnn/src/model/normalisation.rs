@@ -1,10 +1,5 @@
 //! A layer that provides input normalisation around known bounds.
 
-#![expect(
-	clippy::redundant_field_names,
-	reason = "Caused by Burn's `Config` derive"
-)]
-
 use burn::prelude::*;
 
 /// Configuration to create a [`Normalisation`] with the [init] function.

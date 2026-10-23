@@ -7085,18 +7085,28 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vision-cnn"
-version = "0.1.0"
+version = "0.17.0"
 dependencies = [
  "burn",
  "burn-flex",
  "burn-store",
- "clap",
  "csv",
  "dataset-loader",
  "image",
  "rand 0.10.3",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "vision-cnn-cli"
+version = "0.1.0"
+dependencies = [
+ "burn",
+ "clap",
+ "dataset-loader",
+ "time",
+ "vision-cnn",
 ]
 
 [[package]]

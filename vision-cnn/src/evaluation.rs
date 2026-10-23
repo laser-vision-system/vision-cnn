@@ -1,5 +1,10 @@
 //! Regression metrics for model evaluation.
 
+#![expect(
+	clippy::inline_trait_bounds,
+	reason = "Only used with a single generic parameter"
+)]
+
 use std::{
 	collections::BTreeMap,
 	error::Error,
@@ -237,12 +242,9 @@ impl EvaluationReport {
 	clippy::cast_precision_loss,
 	reason = "The sample count is bounded by the allocated in-memory evaluation pairs"
 )]
-pub fn regression_metrics<I>(
+pub fn regression_metrics<I: IntoIterator<Item = (f64, f64)>>(
 	samples: I
-) -> Result<RegressionMetrics, RegressionMetricsError>
-where
-	I: IntoIterator<Item = (f64, f64)>,
-{
+) -> Result<RegressionMetrics, RegressionMetricsError> {
 	let mut absolute_errors = Vec::new();
 	let mut squared_error_sum = 0.0;
 	let mut signed_error_sum = 0.0;
@@ -383,7 +385,7 @@ mod tests {
 		let mut json = Vec::new();
 		report
 			.write_json(&mut json)
-			.expect("report should serialize as JSON");
+			.expect("report should serialise as JSON");
 		let json_value: serde_json::Value =
 			serde_json::from_slice(&json).expect("report JSON should parse");
 		assert_eq!(
@@ -416,7 +418,7 @@ mod tests {
 		let mut csv_data = Vec::new();
 		report
 			.write_csv(&mut csv_data)
-			.expect("sample rows should serialize as CSV");
+			.expect("sample rows should serialise as CSV");
 		let mut reader = csv::Reader::from_reader(csv_data.as_slice());
 		let headers =
 			reader.headers().expect("CSV headers should exist").clone();
