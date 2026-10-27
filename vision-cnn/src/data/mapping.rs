@@ -19,8 +19,13 @@ use burn::{
 	},
 };
 use dataset_loader::item::LaserItem;
+use image::imageops::FilterType;
 
-use super::ImageType;
+use super::{
+	IMG_HEIGHT,
+	IMG_WIDTH,
+	ImageType,
+};
 
 /// The data-structure used post-mapping.
 #[derive(Debug, Clone)]
@@ -54,11 +59,13 @@ where
 		&self,
 		item: &I,
 	) -> LoadedLaserItem<B> {
+		let image = item
+			.load()
+			.expect("the image should not fail to load")
+			.resize_to_fill(IMG_WIDTH, IMG_HEIGHT, FilterType::Nearest)
+			.into();
 		LoadedLaserItem {
-			image: item
-				.load()
-				.expect("the image should not fail to load")
-				.into(),
+			image,
 			image_path: item.get_image_path().to_string(),
 			intensity: map_intensity::<B, _>(*item.get_intensity()),
 			position: item.get_position().map(str::to_owned),

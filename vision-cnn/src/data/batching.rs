@@ -29,15 +29,14 @@ use rand::{
 };
 
 use super::{
+	IMG_CHANNELS_LUMA,
+	IMG_CHANNELS_RGB,
+	IMG_HEIGHT,
+	IMG_PIXELS,
+	IMG_WIDTH,
 	ImageType,
 	LoadedLaserItem,
 };
-
-const IMG_CHANNELS_LUMA: usize = 1;
-const IMG_CHANNELS_RGB: usize = 3;
-const IMG_HEIGHT: u32 = 480;
-const IMG_WIDTH: u32 = 640;
-const IMG_PIXELS: usize = (IMG_HEIGHT * IMG_WIDTH) as usize;
 
 const BATCH_FEATURE_RANK: usize = 4;
 const BATCH_LABEL_RANK: usize = 1;
