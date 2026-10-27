@@ -37,19 +37,20 @@ unsafe_code = "deny" # We should avoid using unsafe code as much as possible.
 missing_docs = "deny" # Make sure to include documentation.
 
 [workspace.lints.rustdoc]
-missing_crate_level_docs = "deny"
-broken_intra_doc_links = "deny"
+missing_crate_level_docs = "deny" # The crate-level docs should give a brief overview.
+broken_intra_doc_links = "deny" # All links should be correct.
 
 [workspace.lints.clippy]
-
 tabs_in_doc_comments = "allow" # Tabs expected for indentation.
 
 # ===== pedantic group lints ======
 
 pedantic = { level = "deny", priority = -1 }
 must_use_candidate = "allow" # We don't need to be constantly alerted to this.
-missing_errors_doc = "deny" # Documentation should be thorough
-missing_panics_doc = "deny" # Documentation should be thorough
+missing_errors_doc = "deny" # Documentation should be thorough.
+missing_panics_doc = "deny" # Documentation should be thorough.
+deprecated_attributes_without_note = "warn" # Helpful, but not critical at the moment.
+deprecated_attributes_without_since = "allow" # We don't have stable releases yet.
 
 # ===== restriction group lints ======
 
@@ -67,7 +68,6 @@ impl_trait_in_params = "allow" # `impl Trait` hides from turbofish (`::<>`) whic
 inline_modules = "allow" # Currently complains about inline test modules.
 iter_over_hash_type = "allow" # We do not care about order.
 let_underscore_untyped = "allow" # Overlaps with `let_underscore_must_use`, little other value added.
-missing_docs_in_private_items = "allow" # This includes private fields; it would be overkill.
 missing_inline_in_public_items = "allow" # TODO: Maybe upgrade in the future for performance.
 module_name_repetitions = "allow" # Doesn't seem to help, often forces dumb renaming.
 multiple_inherent_impl = "allow" # This is fine in a single file, but discouraged across different files.
@@ -94,6 +94,7 @@ map_with_unused_argument_over_ranges = "warn" # Encourages a better pattern.
 min_ident_chars = "warn" # Encourage readability.
 missing_assert_message = "warn" # Encourage helpful assertion messages.
 missing_asserts_for_indexing = "warn" # Encourage checking bounds.
+missing_docs_in_private_items = "warn" # This includes private fields; not strictly necessary, but encouraged.
 mutex_atomic = "warn" # Raise attention to a potential alternative.
 mutex_integer = "warn" # Raise attention to a potential alternative.
 return_and_then = "warn" # Improves readability.
