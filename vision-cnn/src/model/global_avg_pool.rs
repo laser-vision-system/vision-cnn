@@ -31,6 +31,10 @@ impl GlobalAvgPooling2d {
 	///
 	/// - input: `[batch_size, channels, height_in, width_in]`
 	/// - output: `[batch_size, channels]`
+	#[expect(
+		clippy::unused_self,
+		reason = "Needed to include this module in the model structure"
+	)]
 	pub fn forward<B>(
 		&self,
 		input: Tensor<B, 4>,
