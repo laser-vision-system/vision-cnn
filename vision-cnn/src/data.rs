@@ -23,6 +23,8 @@ pub use self::{
 
 /// The image buffer representation that is supported by the current model.
 pub type ImageType = image::GrayImage;
+/// The data type used for intensit measurement.
+pub type IntensityType = f32;
 
 /// Hide these values from submodules.
 mod dimensions {

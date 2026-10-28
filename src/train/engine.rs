@@ -9,11 +9,7 @@ use std::{
 	path::Path,
 };
 
-use burn::backend::{
-	Autodiff,
-	Cuda,
-	cuda::CudaDevice,
-};
+use burn::tensor::Device;
 use dataset_loader::augmentation::{
 	ImageStep as _,
 	NoOp,
@@ -37,15 +33,14 @@ pub fn train(
 	output_dir: &Path,
 	plan: &TrainingPlan,
 	source: data::DatasetSource,
-) -> Result<LaserModel<Cuda>, Box<dyn Error>> {
-	type TrainAutodiffBackend = Autodiff<Cuda>;
-	let device = CudaDevice::default();
-	let splits = source.load_splits::<Cuda>();
+) -> Result<LaserModel, Box<dyn Error>> {
+	let device = Device::default().autodiff();
+	let splits = source.load_splits();
 	let output_dir = output_dir.to_str().ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "output path is not UTF-8")
 	})?;
 	let train_pipeline = random_flip_augmentation_pipeline();
-	Ok(training::train::<TrainAutodiffBackend>(
+	Ok(training::train(
 		output_dir,
 		plan,
 		&device,
@@ -56,16 +51,16 @@ pub fn train(
 }
 
 pub fn evaluate(
-	model: &LaserModel<Cuda>,
+	model: &LaserModel,
 	report_dir: &Path,
 	dataset_choice: DatasetChoice,
 ) -> Result<(), Box<dyn Error>> {
-	let device = CudaDevice::default();
-	let splits = dataset_choice.source().load_splits::<Cuda>();
+	let device = Device::default();
+	let splits = dataset_choice.source().load_splits();
 	let batch_size = std::num::NonZeroUsize::new(32).ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "invalid evaluation batch size")
 	})?;
-	crate::infer::evaluate::evaluate_all_with_model::<Cuda>(
+	crate::infer::evaluate::evaluate_all_with_model(
 		model,
 		batch_size,
 		dataset_choice.name(),

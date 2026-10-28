@@ -1,19 +1,8 @@
 //! Execute sample inference or full-split evaluation.
 
-#![expect(
-	clippy::inline_trait_bounds,
-	reason = "Only used with a single generic parameter"
-)]
-
 use std::error::Error;
 
-use burn::{
-	backend::{
-		Cuda,
-		cuda::CudaDevice,
-	},
-	prelude::Backend,
-};
+use burn::tensor::Device;
 use vision_cnn::data::LoadedDataset;
 
 use super::{
@@ -28,17 +17,16 @@ use super::{
 	},
 };
 
-struct DatasetSplits<'a, B: Backend> {
-	validation: &'a LoadedDataset<B>,
-	test: &'a LoadedDataset<B>,
+struct DatasetSplits<'a> {
+	validation: &'a LoadedDataset,
+	test: &'a LoadedDataset,
 }
 
 pub fn run(args: &InferArgs) -> Result<(), Box<dyn Error>> {
-	type InferBackend = Cuda;
 	let paths = paths::resolve(args)?;
 	paths::prepare_reports(&paths, args.force)?;
-	let device = CudaDevice::default();
-	let splits = args.dataset.source().load_splits::<InferBackend>();
+	let device = Device::default().autodiff();
+	let splits = args.dataset.source().load_splits();
 	run_split(
 		args,
 		&paths,
@@ -50,16 +38,16 @@ pub fn run(args: &InferArgs) -> Result<(), Box<dyn Error>> {
 	)
 }
 
-fn run_split<B: Backend>(
+fn run_split(
 	arguments: &InferArgs,
 	paths: &InferPaths,
-	splits: &DatasetSplits<'_, B>,
-	device: &B::Device,
+	splits: &DatasetSplits<'_>,
+	device: &Device,
 ) -> Result<(), Box<dyn Error>> {
 	if arguments.evaluate_all {
 		evaluate_split(arguments, paths, splits, device)
 	} else {
-		evaluate::infer_samples::<B>(
+		evaluate::infer_samples(
 			&paths.model_dir,
 			&paths.model_name,
 			arguments.num_samples.get(),
@@ -69,11 +57,11 @@ fn run_split<B: Backend>(
 	}
 }
 
-fn evaluate_split<B: Backend>(
+fn evaluate_split(
 	arguments: &InferArgs,
 	paths: &InferPaths,
-	splits: &DatasetSplits<'_, B>,
-	device: &B::Device,
+	splits: &DatasetSplits<'_>,
+	device: &Device,
 ) -> Result<(), Box<dyn Error>> {
 	let (split_name, dataset) = match arguments.evaluation_split {
 		EvaluationSplit::Validate => ("validation", splits.validation),
@@ -85,7 +73,7 @@ fn evaluate_split<B: Backend>(
 			"evaluation report directory was not resolved",
 		)
 	})?;
-	evaluate::evaluate_all_named::<B>(
+	evaluate::evaluate_all_named(
 		&evaluate::ModelExport {
 			directory: &paths.model_dir,
 			name: &paths.model_name,

@@ -2,11 +2,10 @@
 
 use std::path::Path;
 
-use burn::prelude::Backend;
-use burn_store::{
-	BurnpackError,
-	BurnpackStore,
-	ModuleSnapshot as _,
+use burn::{
+	module::Module as _,
+	store::RecordError,
+	tensor::Device,
 };
 
 use crate::model::{
@@ -19,16 +18,11 @@ use crate::model::{
 /// # Errors
 ///
 /// If the model is unable to be saved into the store path.
-pub fn export_model<B, P>(
-	model: &LaserModel<B>,
-	path: P,
-) -> Result<(), BurnpackError>
-where
-	B: Backend,
-	P: AsRef<Path>,
-{
-	let mut store = BurnpackStore::from_file(path).overwrite(true);
-	model.save_into(&mut store)
+pub fn export_model(
+	model: LaserModel,
+	path: impl AsRef<Path>,
+) -> Result<(), RecordError> {
+	model.save_file(path)
 }
 
 /// Load a Burnpack model export using the provided model configuration.
@@ -36,19 +30,13 @@ where
 /// # Errors
 ///
 /// If the model is unable to be loaded from the store path.
-pub fn load_model<B, P>(
+pub fn load_model(
 	config: &LaserModelConfig,
-	path: P,
-	device: &B::Device,
-) -> Result<LaserModel<B>, BurnpackError>
-where
-	B: Backend,
-	P: AsRef<Path>,
-{
-	let mut model = config.init::<B>(device);
-	let mut store = BurnpackStore::from_file(path);
-	let _apply_result = model.load_from(&mut store)?;
-	Ok(model)
+	path: impl AsRef<Path>,
+	device: &Device,
+) -> Result<LaserModel, RecordError> {
+	let model = config.init(device);
+	model.try_load_file(path)
 }
 
 #[cfg(test)]
@@ -64,11 +52,7 @@ mod tests {
 		},
 	};
 
-	use burn::backend::Flex;
-
 	use super::*;
-
-	type Device = burn::prelude::Device<Flex>;
 
 	static NEXT_TEST_DIRECTORY: AtomicUsize = AtomicUsize::new(0);
 
@@ -89,10 +73,10 @@ mod tests {
 		let path = directory.join("model.bpk");
 		let device = Device::default();
 		let config = LaserModelConfig::new();
-		let model = config.init::<Flex<f32>>(&device);
+		let model = config.init(&device);
 
-		export_model(&model, &path).expect("model export should succeed");
-		let loaded = load_model::<Flex<f32>, _>(&config, &path, &device);
+		export_model(model, &path).expect("model export should succeed");
+		let loaded = load_model(&config, &path, &device);
 
 		assert!(loaded.is_ok(), "exported model should load successfully");
 		assert!(path.is_file(), "Burnpack export should be written");

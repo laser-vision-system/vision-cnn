@@ -15,7 +15,6 @@ use burn::{
 		},
 	},
 	prelude::*,
-	tensor::backend::AutodiffBackend,
 	train::{
 		InferenceStep,
 		RegressionOutput,
@@ -46,13 +45,10 @@ pub struct LaserModelConfig {
 
 impl LaserModelConfig {
 	/// Create a [`LaserModel`] with the configured hyper-parameters.
-	pub fn init<B>(
+	pub fn init(
 		&self,
-		device: &B::Device,
-	) -> LaserModel<B>
-	where
-		B: Backend,
-	{
+		device: &Device,
+	) -> LaserModel {
 		let start_channels = self.read_head_config.start_channels;
 		let double = start_channels * 2;
 		let quad = start_channels * 4;
@@ -67,14 +63,14 @@ impl LaserModelConfig {
 
 /// The laser intensity prediction model.
 #[derive(Module, Debug)]
-pub struct LaserModel<B: Backend> {
+pub struct LaserModel {
 	normalisation: Normalisation,
-	read_head: ReadHead<B>,
-	hidden: Linear<B>,
-	prediction: Linear<B>,
+	read_head: ReadHead,
+	hidden: Linear,
+	prediction: Linear,
 }
 
-impl<B: Backend> LaserModel<B> {
+impl LaserModel {
 	/// A single forward pass on the model.
 	///
 	/// # Shapes
@@ -82,8 +78,8 @@ impl<B: Backend> LaserModel<B> {
 	///   - Output `[batch_size, 1]`
 	pub fn forward(
 		&self,
-		input: Tensor<B, 4>,
-	) -> Tensor<B, 2> {
+		input: Tensor<4>,
+	) -> Tensor<2> {
 		let x = input; // [batch_size, 1, 640, 480]
 		let x = self.normalisation.forward(x);
 		let x = self.read_head.forward(x); // [batch_size, 32]
@@ -94,9 +90,9 @@ impl<B: Backend> LaserModel<B> {
 	/// The training/validation forward pass with loss calculation.
 	pub fn forward_step(
 		&self,
-		batch: LaserBatch<B>,
-	) -> RegressionOutput<B> {
-		let targets: Tensor<B, 2> = batch.targets.unsqueeze_dim(1);
+		batch: LaserBatch,
+	) -> RegressionOutput {
+		let targets: Tensor<2> = batch.targets.unsqueeze_dim(1);
 		let logits = self.forward(batch.images);
 		let loss = MseLoss::new().forward(
 			logits.clone(),
@@ -108,9 +104,9 @@ impl<B: Backend> LaserModel<B> {
 	}
 }
 
-impl<B: AutodiffBackend> TrainStep for LaserModel<B> {
-	type Input = LaserBatch<B>;
-	type Output = RegressionOutput<B>;
+impl TrainStep for LaserModel {
+	type Input = LaserBatch;
+	type Output = RegressionOutput;
 
 	fn step(
 		&self,
@@ -121,9 +117,9 @@ impl<B: AutodiffBackend> TrainStep for LaserModel<B> {
 	}
 }
 
-impl<B: Backend> InferenceStep for LaserModel<B> {
-	type Input = LaserBatch<B>;
-	type Output = RegressionOutput<B>;
+impl InferenceStep for LaserModel {
+	type Input = LaserBatch;
+	type Output = RegressionOutput;
 
 	fn step(
 		&self,
@@ -135,21 +131,15 @@ impl<B: Backend> InferenceStep for LaserModel<B> {
 
 #[cfg(test)]
 mod tests {
-	use burn::{
-		backend::Flex,
-		tensor::Tensor,
-	};
+	use burn::tensor::Tensor;
 
 	use super::*;
 
-	type Backend = Flex;
-	type Device = burn::prelude::Device<Backend>;
-
 	#[test]
 	fn forward_keeps_batch_shape_for_normalised_inputs() {
-		let device = Device::default();
-		let model = LaserModelConfig::new().init::<Backend>(&device);
-		let images = Tensor::<Backend, 4>::ones([2, 1, 480, 640], &device);
+		let device = Device::flex();
+		let model = LaserModelConfig::new().init(&device);
+		let images = Tensor::<4>::ones([2, 1, 480, 640], &device);
 		let output = model.forward(images);
 
 		assert_eq!(output.dims(), [2, 1]);
