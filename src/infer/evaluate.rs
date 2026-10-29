@@ -4,10 +4,6 @@
 	clippy::print_stdout,
 	reason = "Evaluation reports its results in the terminal"
 )]
-#![expect(
-	clippy::inline_trait_bounds,
-	reason = "Only used with a single generic parameter"
-)]
 
 use std::{
 	error::Error,
@@ -28,11 +24,7 @@ use std::{
 
 use burn::{
 	data::dataset::Dataset,
-	prelude::Backend,
-	tensor::{
-		Element,
-		ElementConversion as _,
-	},
+	tensor::Device,
 };
 use vision_cnn::{
 	data::LoadedLaserItem,
@@ -41,7 +33,11 @@ use vision_cnn::{
 		RegressionMetrics,
 		regression_metrics,
 	},
-	inference,
+	inference::{
+		self,
+		result::InferenceResults,
+	},
+	model::LaserModel,
 };
 
 /// Directory and exported filename identifying a trained model.
@@ -52,39 +48,41 @@ pub struct ModelExport<'a> {
 	pub name: &'a str,
 }
 
-pub fn infer_samples<B: Backend>(
+pub fn infer_samples(
 	model_dir: &Path,
 	model_name: &str,
 	num_samples: usize,
-	dataset: &impl Dataset<LoadedLaserItem<B>>,
-	device: &B::Device,
+	dataset: &impl Dataset<LoadedLaserItem>,
+	device: &Device,
 ) -> Result<(), Box<dyn Error>> {
 	// TODO: Pre-validate?
 	let model_dir = model_dir.to_str().ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "model path is not UTF-8")
 	})?;
-	let items: Vec<_> = dataset.iter().take(num_samples).collect();
-	let model = inference::load_model::<B>(model_dir, model_name, device);
+	let items = dataset
+		.iter()
+		.take(num_samples)
+		.collect::<Result<Vec<_>, _>>()?;
+	let model = inference::load_model(model_dir, model_name, device);
 	let results = inference::infer(&model, device, items);
 	print_results(&results);
 	Ok(())
 }
 
 /// Evaluate all samples in a dataset using a named model export.
-pub fn evaluate_all_named<B: Backend>(
+pub fn evaluate_all_named(
 	model_export: &ModelExport<'_>,
 	batch_size: NonZeroUsize,
 	dataset_name: &str,
 	split_name: &str,
 	report_dir: &Path,
-	dataset: &impl Dataset<LoadedLaserItem<B>>,
-	device: &B::Device,
+	dataset: &impl Dataset<LoadedLaserItem>,
+	device: &Device,
 ) -> Result<(), Box<dyn Error>> {
 	let model_dir = model_export.directory.to_str().ok_or_else(|| {
 		IoError::new(ErrorKind::InvalidInput, "model path is not UTF-8")
 	})?;
-	let model =
-		inference::load_model::<B>(model_dir, model_export.name, device);
+	let model = inference::load_model(model_dir, model_export.name, device);
 	evaluate_all_with_model(
 		&model,
 		batch_size,
@@ -102,21 +100,20 @@ pub fn evaluate_all_named<B: Backend>(
 ///
 /// Returns an error if a dataset sample or report file cannot be read or
 /// written.
-pub fn evaluate_all_with_model<B: Backend>(
-	model: &vision_cnn::model::LaserModel<B>,
+pub fn evaluate_all_with_model(
+	model: &LaserModel,
 	batch_size: NonZeroUsize,
 	dataset_name: &str,
 	split_name: &str,
 	report_dir: &Path,
-	dataset: &impl Dataset<LoadedLaserItem<B>>,
-	device: &B::Device,
+	dataset: &impl Dataset<LoadedLaserItem>,
+	device: &Device,
 ) -> Result<(), Box<dyn Error>> {
-	let results =
-		inference::infer_dataset::<B>(model, device, dataset, batch_size)?;
+	let results = inference::infer_dataset(model, device, dataset, batch_size)?;
 	let metrics = regression_metrics(results.0.iter().map(|sample| {
 		(
-			sample.expected_intensity.elem::<f64>(),
-			sample.predicted_intensity.elem::<f64>(),
+			sample.expected_intensity.into(),
+			sample.predicted_intensity.into(),
 		)
 	}))?;
 	let report =
@@ -163,7 +160,7 @@ fn print_metrics(metrics: &RegressionMetrics) {
 	}
 }
 
-fn print_results<T: Element>(results: &inference::result::InferenceResults<T>) {
+fn print_results(results: &InferenceResults) {
 	println!("{results}");
 }
 

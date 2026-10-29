@@ -1,10 +1,5 @@
 //! Regression metrics for model evaluation.
 
-#![expect(
-	clippy::inline_trait_bounds,
-	reason = "Only used with a single generic parameter"
-)]
-
 use std::{
 	collections::BTreeMap,
 	error::Error,
@@ -12,10 +7,6 @@ use std::{
 	io::Write,
 };
 
-use burn::tensor::{
-	Element,
-	ElementConversion,
-};
 use serde::Serialize;
 
 use crate::inference::result::SampleInference;
@@ -114,23 +105,22 @@ pub struct EvaluationReport {
 
 impl EvaluationReport {
 	/// Create a report from ordered predictions and aggregate metrics.
-	pub fn new<D, S, T>(
+	pub fn new<D, S>(
 		dataset: D,
 		split: S,
 		metrics: RegressionMetrics,
-		results: &[SampleInference<T>],
+		results: &[SampleInference],
 	) -> Self
 	where
 		D: Into<String>,
 		S: Into<String>,
-		T: Element + ElementConversion,
 	{
 		let samples = results
 			.iter()
 			.enumerate()
 			.map(|(sample_index, result)| {
-				let expected = result.expected_intensity.elem::<f32>();
-				let predicted = result.predicted_intensity.elem::<f32>();
+				let expected = result.expected_intensity;
+				let predicted = result.predicted_intensity;
 				let residual = predicted - expected;
 				EvaluationSample {
 					sample_index,
@@ -143,9 +133,7 @@ impl EvaluationReport {
 					source_fields: result
 						.source_fields
 						.iter()
-						.map(|(name, value)| {
-							((*name).to_owned(), value.clone())
-						})
+						.map(|(name, value)| ((*name).clone(), value.clone()))
 						.collect(),
 				}
 			})
@@ -217,11 +205,12 @@ impl EvaluationReport {
 	}
 }
 
+// Note: Latex support is currently an unstable feature: https://github.com/rust-lang/rust/issues/162365
 /// Compute aggregate regression metrics from `(target, prediction)` pairs.
 ///
 /// The 95th percentile uses linear interpolation between adjacent sorted
 /// absolute errors. $R^2$ is undefined when every target has the same value.
-// Note: Latex support is currently an unstable feature: https://github.com/rust-lang/rust/issues/162365
+///
 /// # Errors
 ///
 /// Returns [`RegressionMetricsError::EmptyInput`] when there are no pairs and
@@ -375,7 +364,10 @@ mod tests {
 			position: Some("capture, north".to_owned()),
 			expected_intensity: 5_f32,
 			predicted_intensity: 4.5_f32,
-			source_fields: vec![("note", "quoted \"value\"".to_owned())],
+			source_fields: vec![(
+				"note".to_owned(),
+				"quoted \"value\"".to_owned(),
+			)],
 		}];
 		let metrics = regression_metrics([(5.0, 4.5)])
 			.expect("finite non-empty data should produce metrics");

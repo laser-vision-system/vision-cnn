@@ -29,26 +29,25 @@ use rand::{
 };
 
 use super::{
+	IMG_CHANNELS_LUMA,
+	IMG_CHANNELS_RGB,
+	IMG_HEIGHT,
+	IMG_PIXELS,
+	IMG_WIDTH,
 	ImageType,
 	LoadedLaserItem,
 };
-
-const IMG_CHANNELS_LUMA: usize = 1;
-const IMG_CHANNELS_RGB: usize = 3;
-const IMG_HEIGHT: u32 = 480;
-const IMG_WIDTH: u32 = 640;
-const IMG_PIXELS: usize = (IMG_HEIGHT * IMG_WIDTH) as usize;
 
 const BATCH_FEATURE_RANK: usize = 4;
 const BATCH_LABEL_RANK: usize = 1;
 
 /// A collection of input items and labels.
 #[derive(Clone, Debug)]
-pub struct LaserBatch<B: Backend> {
+pub struct LaserBatch {
 	/// The input features.
-	pub images: Tensor<B, BATCH_FEATURE_RANK>,
+	pub images: Tensor<BATCH_FEATURE_RANK>,
 	/// The labels.
-	pub targets: Tensor<B, BATCH_LABEL_RANK>,
+	pub targets: Tensor<BATCH_LABEL_RANK>,
 }
 
 /// A unit struct that provides the batching trait implementation.
@@ -56,16 +55,12 @@ pub struct LaserBatch<B: Backend> {
 pub struct LaserBatcher;
 
 // Has two different backend generics because of autodiff.
-impl<B, M> Batcher<B, LoadedLaserItem<M>, LaserBatch<B>> for LaserBatcher
-where
-	B: Backend,
-	M: Backend<FloatElem = B::FloatElem>,
-{
+impl Batcher<LoadedLaserItem, LaserBatch> for LaserBatcher {
 	fn batch(
 		&self,
-		items: Vec<LoadedLaserItem<M>>,
-		device: &Device<B>,
-	) -> LaserBatch<B> {
+		items: Vec<LoadedLaserItem>,
+		device: &Device,
+	) -> LaserBatch {
 		batch_items(items, device, identity)
 	}
 }
@@ -91,18 +86,15 @@ impl<P: ImageStep> AugmentedLaserBatcher<P> {
 }
 
 // Has two different backend generics because of autodiff.
-impl<B, M, P> Batcher<B, LoadedLaserItem<M>, LaserBatch<B>>
-	for AugmentedLaserBatcher<P>
+impl<P> Batcher<LoadedLaserItem, LaserBatch> for AugmentedLaserBatcher<P>
 where
-	B: Backend,
-	M: Backend<FloatElem = B::FloatElem>,
 	P: ImageStep,
 {
 	fn batch(
 		&self,
-		items: Vec<LoadedLaserItem<M>>,
-		device: &Device<B>,
-	) -> LaserBatch<B> {
+		items: Vec<LoadedLaserItem>,
+		device: &Device,
+	) -> LaserBatch {
 		batch_items(items, device, |image| {
 			let mut rng =
 				self.rng.lock().unwrap_or_else(PoisonError::into_inner);
@@ -112,20 +104,15 @@ where
 }
 
 // Has two different backend generics because of autodiff.
-fn batch_items<B, M, F>(
-	items: Vec<LoadedLaserItem<M>>,
-	device: &Device<B>,
-	mut modify_image: F,
-) -> LaserBatch<B>
-where
-	B: Backend,
-	M: Backend<FloatElem = B::FloatElem>,
-	F: FnMut(ImageType) -> ImageType,
-{
+fn batch_items(
+	items: Vec<LoadedLaserItem>,
+	device: &Device,
+	mut modify_image: impl FnMut(ImageType) -> ImageType,
+) -> LaserBatch {
 	let targets = items
 		.iter()
 		.map(|item| {
-			Tensor::<B, BATCH_LABEL_RANK>::from_data([item.intensity], device)
+			Tensor::<BATCH_LABEL_RANK>::from_data([item.intensity], device)
 		})
 		.collect();
 	let targets = Tensor::cat(targets, 0);
@@ -141,14 +128,10 @@ where
 
 /// Batch luma images into a tensor.
 #[allow(dead_code, reason = "Batching options can be swapped when needed")]
-fn luma_images_to_tensor<B, I>(
-	images: I,
-	device: &B::Device,
-) -> Tensor<B, BATCH_FEATURE_RANK>
-where
-	B: Backend,
-	I: ExactSizeIterator<Item = GrayImage>,
-{
+fn luma_images_to_tensor(
+	images: impl ExactSizeIterator<Item = GrayImage>,
+	device: &Device,
+) -> Tensor<BATCH_FEATURE_RANK> {
 	let batch_size = images.len();
 
 	let values = images
@@ -178,14 +161,10 @@ where
 ///
 /// Convolution layers are channel-first.
 #[allow(dead_code, reason = "Batching options can be swapped when needed")]
-fn rgb_images_to_tensor<B, I>(
-	images: I,
-	device: &B::Device,
-) -> Tensor<B, BATCH_FEATURE_RANK>
-where
-	B: Backend,
-	I: ExactSizeIterator<Item = RgbImage>,
-{
+fn rgb_images_to_tensor(
+	images: impl ExactSizeIterator<Item = RgbImage>,
+	device: &Device,
+) -> Tensor<BATCH_FEATURE_RANK> {
 	let batch_size = images.len();
 	let image_size = IMG_PIXELS * IMG_CHANNELS_RGB;
 	let mut values = vec![0; batch_size * image_size];
@@ -229,10 +208,6 @@ where
 
 #[cfg(test)]
 mod tests {
-	use burn_flex::{
-		Flex,
-		FlexDevice,
-	};
 	use image::RgbImage;
 
 	use super::*;
@@ -244,13 +219,12 @@ mod tests {
 			GrayImage::from_pixel(IMG_WIDTH, IMG_HEIGHT, image::Luma([20])),
 		];
 		let batch_size = images.len();
-		let device = FlexDevice;
-		let tensor =
-			luma_images_to_tensor::<Flex, _>(images.into_iter(), &device);
+		let device = Device::flex();
+		let tensor = luma_images_to_tensor(images.into_iter(), &device);
 		let dimensions = tensor.dims();
 		let values = tensor
 			.into_data()
-			.to_vec::<f32>()
+			.try_to_vec()
 			.expect("tensor values should be readable");
 
 		assert_eq!(
@@ -281,13 +255,12 @@ mod tests {
 			),
 		];
 		let batch_size = images.len();
-		let device = FlexDevice;
-		let tensor =
-			rgb_images_to_tensor::<Flex, _>(images.into_iter(), &device);
+		let device = Device::flex();
+		let tensor = rgb_images_to_tensor(images.into_iter(), &device);
 		let dimensions = tensor.dims();
 		let values = tensor
 			.into_data()
-			.to_vec::<f32>()
+			.try_to_vec()
 			.expect("tensor values should be readable");
 
 		assert_eq!(

@@ -5,27 +5,27 @@ use std::fmt::{
 	Display,
 };
 
-use burn::tensor::Element;
+use crate::data::IntensityType;
 
 /// The metadata and inferred intensity for one dataset sample.
 #[derive(Clone, Debug, PartialEq)]
-pub struct SampleInference<T: Element> {
+pub struct SampleInference {
 	/// Canonical image path identifying this sample on the current machine.
 	pub image_path: String,
 	/// Position metadata, when the source dataset provides it.
 	pub position: Option<String>,
 	/// Dataset intensity for this sample.
-	pub expected_intensity: T,
+	pub expected_intensity: IntensityType,
 	/// Model-predicted intensity.
-	pub predicted_intensity: T,
+	pub predicted_intensity: IntensityType,
 	/// Named source-specific fields, excluding intensity and position.
-	pub source_fields: Vec<(&'static str, String)>,
+	pub source_fields: Vec<(String, String)>,
 }
 
-impl<T: Element> SampleInference<T> {
+impl SampleInference {
 	fn row(
 		&self,
-		field_names: &[&str],
+		field_names: &[String],
 	) -> Vec<String> {
 		[
 			self.position.clone().unwrap_or_default(),
@@ -43,7 +43,7 @@ impl<T: Element> SampleInference<T> {
 	}
 }
 
-impl<T: Element> Display for SampleInference<T> {
+impl Display for SampleInference {
 	fn fmt(
 		&self,
 		f: &mut fmt::Formatter<'_>,
@@ -65,15 +65,15 @@ impl<T: Element> Display for SampleInference<T> {
 
 /// A collection of sample inference results, formatted as a table.
 #[derive(Clone, Debug, PartialEq)]
-pub struct InferenceResults<T: Element>(pub Vec<SampleInference<T>>);
+pub struct InferenceResults(pub Vec<SampleInference>);
 
-impl<T: Element> InferenceResults<T> {
-	fn source_field_names(&self) -> Vec<&'static str> {
+impl InferenceResults {
+	fn source_field_names(&self) -> Vec<String> {
 		let mut names = Vec::new();
 		for result in &self.0 {
 			for (name, _) in &result.source_fields {
 				if !names.contains(name) {
-					names.push(*name);
+					names.push(name.clone());
 				}
 			}
 		}
@@ -82,7 +82,7 @@ impl<T: Element> InferenceResults<T> {
 
 	fn rows(
 		&self,
-		field_names: &[&str],
+		field_names: &[String],
 	) -> Vec<Vec<String>> {
 		self.0
 			.iter()
@@ -91,7 +91,7 @@ impl<T: Element> InferenceResults<T> {
 	}
 }
 
-impl<T: Element> Display for InferenceResults<T> {
+impl Display for InferenceResults {
 	fn fmt(
 		&self,
 		f: &mut fmt::Formatter<'_>,
@@ -109,7 +109,7 @@ impl<T: Element> Display for InferenceResults<T> {
 	}
 }
 
-fn table_headers(field_names: &[&str]) -> Vec<String> {
+fn table_headers(field_names: &[String]) -> Vec<String> {
 	["Position", "Expected", "Predicted"]
 		.into_iter()
 		.map(str::to_owned)
@@ -158,7 +158,7 @@ mod tests {
 		let result = SampleInference {
 			image_path: "dummy/sample.png".to_owned(),
 			position: Some("rearwards_close_outer_0".to_owned()),
-			source_fields: vec![("Gamma", "140".to_owned())],
+			source_fields: vec![("Gamma".to_owned(), "140".to_owned())],
 			expected_intensity: 3.5_f32,
 			predicted_intensity: 3.25,
 		};
@@ -178,7 +178,7 @@ mod tests {
 		};
 
 		assert_eq!(result.position, None);
-		assert_eq!(result.source_fields, [] as [(&str, String); 0]);
+		assert_eq!(result.source_fields, [] as [(String, String); 0]);
 		assert!((result.expected_intensity - 12_f32).abs() < f32::EPSILON);
 		assert!((result.predicted_intensity - 11.75_f32).abs() < f32::EPSILON);
 	}
@@ -189,9 +189,9 @@ mod tests {
 			image_path: "dummy/sample.png".to_owned(),
 			position: Some("rearwards_close_outer_0".to_owned()),
 			source_fields: vec![
-				("Saturation", "64".to_owned()),
-				("ExposureAbsolute", "405".to_owned()),
-				("Gamma", "270".to_owned()),
+				("Saturation".to_owned(), "64".to_owned()),
+				("ExposureAbsolute".to_owned(), "405".to_owned()),
+				("Gamma".to_owned(), "270".to_owned()),
 			],
 			expected_intensity: 3.2_f32,
 			predicted_intensity: 3.15,

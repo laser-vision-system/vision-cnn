@@ -1,17 +1,26 @@
 //! Provides the [`InverseTimeDecayLrScheduler`] type.
 
-use burn::{
-	optim::lr_scheduler::LrScheduler,
-	tensor::backend::Backend,
+use burn::optim::{
+	LearningRate,
+	lr_scheduler::{
+		LrScheduler,
+		LrSchedulerRecord,
+	},
 };
+
+const RECORD_KEY: &str = "step_count";
 
 /// Inverse-time decay scheduler mirroring the Python prototype's
 /// `InverseTimeDecay` behaviour.
 #[derive(Clone, Debug)]
 pub struct InverseTimeDecayLrScheduler {
+	/// Initial learning rate.
 	initial_lr: f64,
+	/// Number of decay steps over which decay is applied.
 	decay_steps: usize,
+	/// Rate of decay.
 	decay_rate: f64,
+	/// Number of steps taken so far.
 	step_count: usize,
 }
 
@@ -49,30 +58,23 @@ impl InverseTimeDecayLrScheduler {
 }
 
 impl LrScheduler for InverseTimeDecayLrScheduler {
-	type Record<B: Backend> = usize;
-
-	fn step(&mut self) -> f64 {
+	fn step(&mut self) -> LearningRate {
 		let lr = self.learning_rate_at(self.step_count);
 		self.step_count += 1;
 		lr
 	}
 
-	fn to_record<B>(&self) -> Self::Record<B>
-	where
-		B: Backend,
-	{
-		self.step_count
+	fn to_record(&self) -> LrSchedulerRecord {
+		LrSchedulerRecord::new().with_scalar(RECORD_KEY, self.step_count)
 	}
 
-	fn load_record<B>(
-		mut self,
-		record: Self::Record<B>,
-	) -> Self
-	where
-		B: Backend,
-	{
-		self.step_count = record;
-		self
+	fn load_record(
+		&mut self,
+		record: LrSchedulerRecord,
+	) {
+		if let Some(step_count) = record.scalar(RECORD_KEY) {
+			self.step_count = step_count;
+		}
 	}
 }
 
@@ -108,5 +110,20 @@ mod tests {
 		let step_2 = scheduler.step() - 0.001_f64;
 		assert!(step_1.abs() < 1e-9_f64);
 		assert!(step_2.abs() < 1e-9_f64);
+	}
+
+	#[test]
+	fn record_round_trip_restores_step_count() {
+		let mut scheduler = InverseTimeDecayLrScheduler::new(0.001, 10, 0.2);
+		for _ in 0..5 {
+			scheduler.step();
+		}
+		let record = scheduler.to_record();
+
+		let mut restored = InverseTimeDecayLrScheduler::new(0.001, 10, 0.2);
+		restored.load_record(record);
+
+		assert_eq!(scheduler.step_count, restored.step_count);
+		assert!((scheduler.step() - restored.step()).abs() < 1e-9_f64);
 	}
 }

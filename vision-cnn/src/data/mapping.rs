@@ -5,85 +5,86 @@
 	reason = "Impossible to handle error inside mapper"
 )]
 
-use std::marker::PhantomData;
-
 use burn::{
 	data::dataset::{
 		Dataset,
 		transform::Mapper,
 	},
-	prelude::Backend,
-	tensor::{
-		Element,
-		ElementConversion as _,
-	},
+	tensor::Element,
 };
 use dataset_loader::item::LaserItem;
+use image::imageops::FilterType;
 
-use super::ImageType;
+use super::{
+	IMG_HEIGHT,
+	IMG_WIDTH,
+	ImageType,
+	IntensityType,
+};
 
 /// The data-structure used post-mapping.
 #[derive(Debug, Clone)]
-pub struct LoadedLaserItem<B: Backend> {
+pub struct LoadedLaserItem {
 	/// The image data.
 	pub image: ImageType,
 	/// The path to the image.
 	pub image_path: String,
 	/// The intensity (label) of the item.
-	pub intensity: B::FloatElem,
+	pub intensity: IntensityType,
 	/// Optional information about the position that the item was capture in.
 	pub position: Option<String>,
 	/// Source-specific details about this item, used for evaluation.
-	pub source_fields: Vec<(&'static str, String)>,
+	pub source_fields: Vec<(String, String)>,
 }
 
 /// A dataset of mapped samples whose target scalar matches a Burn backend.
-pub type LoadedDataset<B> = Box<dyn Dataset<LoadedLaserItem<B>>>;
+pub type LoadedDataset = Box<dyn Dataset<LoadedLaserItem>>;
 
 /// Maps source items and converts their intensity to the backend float type.
 #[derive(Clone, Copy, Debug, Default)]
-pub struct LaserItemMapper<B: Backend>(PhantomData<B>);
+pub struct LaserItemMapper;
 
-impl<B, I, T> Mapper<I, LoadedLaserItem<B>> for LaserItemMapper<B>
+impl<I, T> Mapper<I, LoadedLaserItem> for LaserItemMapper
 where
-	B: Backend,
-	I: LaserItem<IntensityType = T> + Send + Sync + Clone,
 	T: Element,
+	I: LaserItem<IntensityType = T> + Send + Sync + Clone,
+	IntensityType: From<T>,
 {
 	fn map(
 		&self,
 		item: &I,
-	) -> LoadedLaserItem<B> {
+	) -> LoadedLaserItem {
+		let image = item
+			.load()
+			.expect("the image should not fail to load")
+			.resize_to_fill(IMG_WIDTH, IMG_HEIGHT, FilterType::Nearest)
+			.into();
 		LoadedLaserItem {
-			image: item
-				.load()
-				.expect("the image should not fail to load")
-				.into(),
+			image,
 			image_path: item.get_image_path().to_string(),
-			intensity: map_intensity::<B, _>(*item.get_intensity()),
+			intensity: map_intensity(*item.get_intensity()),
 			position: item.get_position().map(str::to_owned),
 			source_fields: item.source_fields(),
 		}
 	}
 }
 
-fn map_intensity<B, T>(intensity: T) -> B::FloatElem
+fn map_intensity<T>(intensity: T) -> IntensityType
 where
-	B: Backend,
 	T: Element,
+	IntensityType: From<T>,
 {
-	B::FloatElem::from_elem(intensity)
+	intensity.into()
 }
 
 #[cfg(test)]
 mod tests {
-	use burn_flex::Flex;
 
 	use super::*;
 
 	#[test]
 	fn maps_compact_integer_intensity_to_backend_float_element() {
-		let mapped = map_intensity::<Flex, _>(53_u8);
+		let mapped = map_intensity(53_u8);
 
 		assert_eq!(mapped, 53_f32);
 	}

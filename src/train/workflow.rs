@@ -11,6 +11,7 @@ use std::{
 };
 
 use vision_cnn::{
+	model::LaserModel,
 	persistence,
 	plan,
 };
@@ -67,7 +68,7 @@ pub fn run(request: &TrainRequest) -> Result<(), Box<dyn Error>> {
 	if let Some(report_dir) = &paths.report_dir {
 		engine::evaluate(&model, report_dir, request.options.dataset)?;
 	}
-	export_model(&paths, &model_name, &model, request.options.dry_run)?;
+	export_model(&paths, &model_name, model, request.options.dry_run)?;
 	Ok(())
 }
 
@@ -157,7 +158,7 @@ fn backup_in_place_model(
 fn export_model(
 	paths: &TrainPaths,
 	model_name: &str,
-	model: &vision_cnn::model::LaserModel<burn::backend::Cuda>,
+	model: LaserModel,
 	dry_run: bool,
 ) -> Result<(), Box<dyn Error>> {
 	if !dry_run {

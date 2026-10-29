@@ -1,14 +1,6 @@
 //! Training configuration, checkpoint discovery, and model optimization.
 
 #![expect(clippy::expect_used, reason = "Not a problem")]
-#![expect(
-	clippy::redundant_field_names,
-	reason = "Caused by Burn's `Config` derive"
-)]
-#![expect(
-	clippy::inline_trait_bounds,
-	reason = "Only used with a single generic parameter"
-)]
 
 use std::{
 	fs,
@@ -22,11 +14,6 @@ use burn::{
 	},
 	optim::AdamConfig,
 	prelude::*,
-	record::{
-		FullPrecisionSettings,
-		NamedMpkGzFileRecorder,
-	},
-	tensor::backend::AutodiffBackend,
 	train::{
 		Learner,
 		MetricEarlyStoppingStrategy,
@@ -136,14 +123,14 @@ pub fn latest_checkpoint_epoch(artefact_dir: &str) -> Option<usize> {
 /// - If a requested resume checkpoint cannot be copied.
 /// - If a resume or output directory cannot be canonicalised.
 // TODO: Decompose this function.
-pub fn train<B: AutodiffBackend>(
+pub fn train(
 	artefact_dir: &str,
 	plan: &TrainingPlan,
-	device: &B::Device,
-	splits: DatasetSplits<impl Backend<FloatElem = B::FloatElem>>,
+	device: &Device,
+	splits: DatasetSplits,
 	train_augmentation: impl ImageStep + 'static,
 	valid_augmentation: impl ImageStep + 'static,
-) -> crate::model::LaserModel<B::InnerBackend> {
+) -> crate::model::LaserModel {
 	let config = plan.config();
 	let resume = plan.resume();
 
@@ -161,7 +148,7 @@ pub fn train<B: AutodiffBackend>(
 		.save(format!("{artefact_dir}/config.json"))
 		.expect("Config should be saved successfully");
 
-	B::seed(device, config.seed);
+	device.seed(config.seed);
 
 	let train_split = splits.training;
 	let val_split = splits.validation;
@@ -216,9 +203,7 @@ pub fn train<B: AutodiffBackend>(
 	.metric_train_numeric(LearningRateMetric::new())
 	.metrics((IterationSpeedMetric::new(), CpuUse::new(), CpuMemory::new()))
 	.metrics_text((CudaMetric::new(),))
-	.with_file_checkpointer(
-		NamedMpkGzFileRecorder::<FullPrecisionSettings>::new(),
-	)
+	.with_default_checkpointers()
 	.num_epochs(total_epochs)
 	.summary();
 
@@ -226,7 +211,7 @@ pub fn train<B: AutodiffBackend>(
 		training = training.checkpoint(epoch);
 	}
 
-	let model = config.model.init::<B>(device);
+	let model = config.model.init(device);
 	let scheduler = InverseTimeDecayLrScheduler::new(
 		config.learning_rate,
 		decay_steps,
