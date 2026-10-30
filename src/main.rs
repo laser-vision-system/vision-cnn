@@ -1,7 +1,5 @@
-use std::error::Error;
+//! Command-line entry point for the `vision-cnn-cli` application.
 
-use vision_cnn::commands::run;
-
-fn main() -> Result<(), Box<dyn Error>> {
-	run()
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+	vision_cnn_cli::run()
 }
